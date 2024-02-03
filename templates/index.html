@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title> <!-- This is where the title is set -->
+    <link rel="stylesheet" href="/static/css/style.css"> <!-- Link to CSS file -->
+    <script src="/static/js/chat.js" defer></script>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="chat-title">{{ title }}</div> <!-- This is where the title is displayed in the chat UI -->
+        <div id="chat-box"></div>
+        <div id="input-area">
+            <input type="text" id="chat-input" placeholder="Ask me anything...">
+            <button id="send-btn" onclick="sendMessage()">Send</button>
+            <button onclick="window.location.href='{{ url_for('download_chat_history') }}'" id="download-btn">Download Chat History</button>
+        </div>
+    </div>
+</body>
+</html>
