@@ -14,6 +14,8 @@ This is a simple chat WebUI developed by Dr. Nicefellow. It is designed to provi
 
 - Python
 - Flask
+- Flask-session
+- YAML
 
 ## Installation
 
