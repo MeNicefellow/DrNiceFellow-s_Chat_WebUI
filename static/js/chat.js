@@ -27,7 +27,20 @@ function sendMessage() {
         });
     }
 }
-
+document.getElementById('clear-btn').addEventListener('click', function() {
+    fetch('/ask', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ question: 'clear' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Clear the chat box
+        document.getElementById('chat-box').innerHTML = '';
+    });
+});
 
 document.getElementById('chat-input').addEventListener('keydown', function(event) {
     if (event.keyCode === 13) {

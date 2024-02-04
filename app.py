@@ -19,6 +19,11 @@ host = cfg['host']
 # Configure server-side session
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
+session_dir = os.path.join(app.instance_path, 'session')
+if not os.path.exists(session_dir):
+    os.makedirs(session_dir)
+print("session_dir:",session_dir)
+app.config["SESSION_FILE_DIR"] = session_dir
 Session(app)
 
 from flask import make_response
@@ -52,10 +57,6 @@ def home():
     # Initialize chat history for new session
     if 'chat_history' not in session:
         session['chat_history'] = []
-    if 'user' not in session:
-        session['user'] = []
-    if 'assistant' not in session:
-        session['assistant'] = []
     title = user+"'s Personal Assistant"  # Replace 'xx' with the desired name
     return render_template('index.html', title=title)
 
@@ -63,12 +64,21 @@ def home():
 def ask():
     data = request.json
     question = data['question']
+    print(request.headers)
 
     if question == 'clear':
         session['chat_history'] = []
         session['user'] = []
         session['assistant'] = []
         return jsonify({'answer': 'Chat history cleared!'})
+
+
+    if 'chat_history' not in session:
+        session['chat_history'] = []
+    if 'user' not in session:
+        session['user'] = []
+    if 'assistant' not in session:
+        session['assistant'] = []
 
 
     max_tokens = 1024
@@ -80,6 +90,9 @@ def ask():
     inst_end = "[/INST]"
     prompt = ''.join(session['chat_history'])+'[INST]'+question+'[/INST]'
     print("prompt:",prompt)
+    print("chat_history:",session['chat_history'])
+    print("user:",session['user'])
+    print("assistant:",session['assistant'])
     
     payload = {
         "prompt": prompt,
@@ -116,6 +129,7 @@ def ask():
         session['chat_history'].append(prompt+answer)
         session['user'].append(question)
         session['assistant'].append(answer)
+        print("session data:",session['chat_history'])
         return jsonify({'answer': answer})
     else:
         return jsonify({'error': 'Failed to fetch response from OpenAI'}), 500
