@@ -1,11 +1,12 @@
 from flask import Flask, render_template, request, jsonify, session
 from flask_session import Session  # You may need to install this with pip
 import requests
-from flask import request
+from flask import request, send_from_directory
 import random
 
 app = Flask(__name__)
 import yaml
+import os
 
 # Load keys from config.yml
 with open("config.yml", 'r') as ymlfile:
@@ -21,6 +22,23 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 from flask import make_response
+
+@app.route('/assets/backgrounds/<path:filename>')
+def custom_static(filename):
+    return send_from_directory('assets/backgrounds', filename)
+@app.route('/next_background_image')
+def next_background_image():
+    current_image = request.args.get('current_image')
+    images = os.listdir('assets/backgrounds')
+    current_index = images.index(current_image)
+    next_index = (current_index + 1) % len(images)  # Loop back to the first image
+    next_image = images[next_index]
+    return jsonify({'image_name': next_image})
+@app.route('/background_image')
+def background_image():
+    # Assuming the first image is the default background
+    image_name = os.listdir('assets/backgrounds')[0]
+    return send_from_directory('assets/backgrounds', image_name)
 
 @app.route('/download_chat_history', methods=['GET'])
 def download_chat_history():
@@ -45,8 +63,12 @@ def home():
 def ask():
     data = request.json
     question = data['question']
-    if 'chat_history' not in session:
+
+    if question == 'clear':
         session['chat_history'] = []
+        session['user'] = []
+        session['assistant'] = []
+        return jsonify({'answer': 'Chat history cleared!'})
 
 
     max_tokens = 1024

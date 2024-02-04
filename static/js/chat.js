@@ -35,3 +35,20 @@ document.getElementById('chat-input').addEventListener('keydown', function(event
         sendMessage();
     }
 });
+
+document.getElementById('change-background').addEventListener('click', function() {
+    let currentImage = document.body.style.backgroundImage;
+    currentImage = currentImage.replace('url("', '').replace('")', '').split('/').pop();
+
+    // If currentImage is an empty string, set it to the name of the default background image
+    if (!currentImage) {
+        currentImage = '1.webp'; // Replace with the actual name of your default background image
+    }
+
+    fetch('/next_background_image?current_image=' + currentImage)
+        .then(response => response.json())
+        .then(data => {
+            const nextImage = 'assets/backgrounds/' + data.image_name;
+            document.body.style.backgroundImage = 'url(' + nextImage + ')';
+        });
+});
