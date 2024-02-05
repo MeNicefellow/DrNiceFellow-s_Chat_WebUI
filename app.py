@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify#, session
 from flask_session import Session  # You may need to install this with pip
 import requests
 from flask import request, send_from_directory
@@ -19,14 +19,15 @@ host = cfg['host']
 # Configure server-side session
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
-session_dir = os.path.join(app.instance_path, 'session')
-if not os.path.exists(session_dir):
-    os.makedirs(session_dir)
-print("session_dir:",session_dir)
-app.config["SESSION_FILE_DIR"] = session_dir
+#session_dir = os.path.join(app.instance_path, 'session')
+#if not os.path.exists(session_dir):
+#    os.makedirs(session_dir)
+#app.config["SESSION_FILE_DIR"] = session_dir
 Session(app)
 
 from flask import make_response
+
+session = {}
 
 @app.route('/assets/backgrounds/<path:filename>')
 def custom_static(filename):
@@ -47,7 +48,7 @@ def background_image():
 
 @app.route('/download_chat_history', methods=['GET'])
 def download_chat_history():
-    chat_history = '\n'.join(session.get('chat_history', [])).replace('[INST]', 'User: ').replace('[/INST]', '\nBot: ')
+    chat_history = session.get('chat_history', '').replace('[INST]', 'User: ').replace('[/INST]', '\nBot: ')
     response = make_response(chat_history)
     response.headers["Content-Disposition"] = "attachment; filename=chat_history.txt"
     return response
@@ -56,7 +57,7 @@ def download_chat_history():
 def home():
     # Initialize chat history for new session
     if 'chat_history' not in session:
-        session['chat_history'] = []
+        session['chat_history'] = ''
     title = user+"'s Personal Assistant"  # Replace 'xx' with the desired name
     return render_template('index.html', title=title)
 
@@ -64,21 +65,20 @@ def home():
 def ask():
     data = request.json
     question = data['question']
-    print(request.headers)
 
     if question == 'clear':
-        session['chat_history'] = []
-        session['user'] = []
-        session['assistant'] = []
+        session['chat_history'] = ''
+        #session['user'] = []
+        #session['assistant'] = []
         return jsonify({'answer': 'Chat history cleared!'})
 
 
     if 'chat_history' not in session:
-        session['chat_history'] = []
-    if 'user' not in session:
-        session['user'] = []
-    if 'assistant' not in session:
-        session['assistant'] = []
+        session['chat_history'] = ''
+    #if 'user' not in session:
+    #    session['user'] = []
+    #if 'assistant' not in session:
+    #    session['assistant'] = []
 
 
     max_tokens = 1024
@@ -88,11 +88,10 @@ def ask():
     temperature=0.8
     inst_beg = "[INST]"
     inst_end = "[/INST]"
-    prompt = ''.join(session['chat_history'])+'[INST]'+question+'[/INST]'
+    prompt = session['chat_history']+'[INST]'+question+'[/INST]'
     print("prompt:",prompt)
-    print("chat_history:",session['chat_history'])
-    print("user:",session['user'])
-    print("assistant:",session['assistant'])
+    #print("user:",session['user'])
+    #print("assistant:",session['assistant'])
     
     payload = {
         "prompt": prompt,
@@ -126,10 +125,10 @@ def ask():
     if response.status_code == 200:
         answer = response.json()['choices'][0]['text']
         # Append bot's response to the chat history
-        session['chat_history'].append(prompt+answer)
-        session['user'].append(question)
-        session['assistant'].append(answer)
-        print("session data:",session['chat_history'])
+        session['chat_history']=prompt+answer
+        print("chat_history:",session['chat_history'])
+        #session['user'].append(question)
+        #session['assistant'].append(answer)
         return jsonify({'answer': answer})
     else:
         return jsonify({'error': 'Failed to fetch response from OpenAI'}), 500
