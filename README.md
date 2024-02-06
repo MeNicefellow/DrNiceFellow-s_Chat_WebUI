@@ -35,8 +35,12 @@ Open your web browser and navigate to `http://localhost:7860`. You can start cha
 
 ## TODO
 
-- Add support for other chat formats
-- Add function calling
+- [ ] Add support for other chat formats
+- [ ] Add function calling
+
+## Disclaimer
+
+This project is intended for personal use. It may contain vulnerabilities and security concerns. Users should use this project at their own risk. The developers of this project will not be responsible for any damage or issues that may arise from using this project.
 
 ## License
 
