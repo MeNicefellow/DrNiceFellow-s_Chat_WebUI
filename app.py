@@ -58,6 +58,8 @@ def home():
     # Initialize chat history for new session
     if 'chat_history' not in session:
         session['chat_history'] = ''
+    if 'msg_history' not in session:
+        session['msg_history'] = []
     title = user+"'s Personal Assistant"  # Replace 'xx' with the desired name
     return render_template('index.html', title=title)
 
@@ -68,6 +70,7 @@ def ask():
 
     if question == 'clear':
         session['chat_history'] = ''
+        session['msg_history'] = []
         #session['user'] = []
         #session['assistant'] = []
         return jsonify({'answer': 'Chat history cleared!'})
@@ -75,6 +78,8 @@ def ask():
 
     if 'chat_history' not in session:
         session['chat_history'] = ''
+    if 'msg_history' not in session:
+        session['msg_history'] = []
     #if 'user' not in session:
     #    session['user'] = []
     #if 'assistant' not in session:
@@ -93,45 +98,63 @@ def ask():
     #print("user:",session['user'])
     #print("assistant:",session['assistant'])
     
-    payload = {
-        "prompt": prompt,
-        "model": "gpt-3.5-turbo-instruct",
-        "max_tokens": max_tokens,
-        "n_predict": max_tokens,
-        "min_p": min_p,
-        "stream": False,
-        "seed": random.randint(
-            1000002406736107, 3778562406736107
-        ),  # Was acting weird without this
-        "top_k": top_k,
-        "top_p": top_p,
-        "stop": ["</s>", inst_beg, inst_end],
-        "temperature": temperature,
+    #payload = {
+    #    "prompt": prompt,
+    #    "model": "gpt-3.5-turbo-instruct",
+    #    "max_tokens": max_tokens,
+    #    "n_predict": max_tokens,
+    #    "min_p": min_p,
+    #    "stream": False,
+    #    "seed": random.randint(
+    #        1000002406736107, 3778562406736107
+    #    ),  # Was acting weird without this
+    #    "top_k": top_k,
+    #    "top_p": top_p,
+    #    "stop": ["</s>", inst_beg, inst_end],
+    #    "temperature": temperature,
+    #}
+    #
+    #
+    #response = requests.post(
+    #    host,
+    #    headers={
+    #        "Accept": "application/json",
+    #        "Content-Type": "application/json",
+    #        "Authorization": f"Bearer {OPENAI_API_KEY}",
+    #    },
+    #    json=payload,
+    #    timeout=360,
+    #    stream=False,
+    #)
+    session['msg_history'].append({"role": "user", "content": question})
+
+    headers = {
+        "Content-Type": "application/json"
     }
-    
-    
-    response = requests.post(
-        host,
-        headers={
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {OPENAI_API_KEY}",
-        },
-        json=payload,
-        timeout=360,
-        stream=False,
-    )
+    data = {
+        "mode": "instruct",
+        "messages": session['msg_history']
+    }
+    response = requests.post(host, headers=headers, json=data, verify=False)
+    print("request sent:",data)
+
+
+
+
 
     if response.status_code == 200:
-        answer = response.json()['choices'][0]['text']
+        print("response with 200")
+        answer = response.json()['choices'][0]['message']['content']#response.json()['choices'][0]['text']
         # Append bot's response to the chat history
-        session['chat_history']=prompt+answer
+        ###session['chat_history']=prompt+answer
+        session['msg_history'].append({"role": "assistant", "content": answer})
         print("chat_history:",session['chat_history'])
         #session['user'].append(question)
         #session['assistant'].append(answer)
         return jsonify({'answer': answer})
     else:
+        print("response with error")
         return jsonify({'error': 'Failed to fetch response from OpenAI'}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',port=7860,debug=True)
+    app.run(host='0.0.0.0',port=7865,debug=True)
