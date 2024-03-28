@@ -2,7 +2,7 @@
 
 ![Screenshot](/assets/screenshot.png)
 
-This is a simple chat WebUI developed by Dr. Nicefellow. It is designed to provide a user-friendly interface for interacting with a chatbot. The backend engine is powered by OpenAI API, and the backend LLM should support the Llama Chat/Mistral Instruct prompt template. It is tested with Tabbyapi.
+This is a simple chat WebUI developed by Dr. Nicefellow. It is designed to provide a user-friendly interface for interacting with a chatbot. The backend engine is powered by OpenAI API, and the backend LLM should support the Llama Chat/Mistral Instruct prompt template. It is tested with OpenAI API extension of text-generation-web-ui.
 
 ## Features
 
@@ -37,7 +37,7 @@ Open your web browser and navigate to `http://localhost:7860`. You can start cha
 
 ## Tool Usage
 
-This project supports the use of the Python interpreter and search engine. The Python interpreter is used for executing Python code, while the search engine is used for retrieving web data based on search terms.
+This project supports the use of the Python interpreter and search engine. The Python interpreter is used for executing Python code, while the search engine is used for retrieving web data based on automatically generated search terms.
 
 ## TODO
 
