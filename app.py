@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, jsonify#, session
 from flask_session import Session  # You may need to install this with pip
 import requests
 from flask import request, send_from_directory
+from utils import *
+import subprocess
 import random
 
 app = Flask(__name__)
@@ -82,81 +84,140 @@ def ask():
         session['chat_history'] = ''
     if 'msg_history' not in session:
         session['msg_history'] = []
-    #if 'user' not in session:
-    #    session['user'] = []
-    #if 'assistant' not in session:
-    #    session['assistant'] = []
+    if tool_usage:
 
-
-    max_tokens = 1024
-    min_p = 0.9
-    top_k = 1
-    top_p = 0.9
-    temperature=0.8
-    inst_beg = "[INST]"
-    inst_end = "[/INST]"
-    prompt = session['chat_history']+'[INST]'+question+'[/INST]'
-    print("prompt:",prompt)
-    #print("user:",session['user'])
-    #print("assistant:",session['assistant'])
-    
-    #payload = {
-    #    "prompt": prompt,
-    #    "model": "gpt-3.5-turbo-instruct",
-    #    "max_tokens": max_tokens,
-    #    "n_predict": max_tokens,
-    #    "min_p": min_p,
-    #    "stream": False,
-    #    "seed": random.randint(
-    #        1000002406736107, 3778562406736107
-    #    ),  # Was acting weird without this
-    #    "top_k": top_k,
-    #    "top_p": top_p,
-    #    "stop": ["</s>", inst_beg, inst_end],
-    #    "temperature": temperature,
-    #}
-    #
-    #
-    #response = requests.post(
-    #    host,
-    #    headers={
-    #        "Accept": "application/json",
-    #        "Content-Type": "application/json",
-    #        "Authorization": f"Bearer {OPENAI_API_KEY}",
-    #    },
-    #    json=payload,
-    #    timeout=360,
-    #    stream=False,
-    #)
-    session['msg_history'].append({"role": "user", "content": question})
-
-    headers = {
-        "Content-Type": "application/json"
-    }
-    data = {
-        "mode": "instruct",
-        "messages": session['msg_history']
-    }
-    response = requests.post(host, headers=headers, json=data, verify=False)
-    print("request sent:",data)
+        first_prompt = f'Please provide the answer to the following question strictly in JSON format, with no additional text or explanation. The JSON response should contain only two keys: "method" and "content". The "method" key can have one of three values: "DirectAnswer", "SearchEngine", or "python". The "content" key should contain the corresponding output based on the method chosen. For "DirectAnswer", it should be the factual answer to the question posed. For "SearchEngine", it should be the exact search query you would use. For "python", it should be the Python code that would generate the answer. Here is the question: {question}'
 
 
 
+        session['msg_history'].append({"role": "user", "content": first_prompt})
 
+        headers = {
+            "Content-Type": "application/json"
+        }
+        data = {
+            "mode": "instruct",
+            "messages": session['msg_history']
+        }
+        response = requests.post(host, headers=headers, json=data, verify=False)
+        print("request sent:",data)
+        i = 0
+        tool_used = ''
+        while i<5:
+            if response.status_code == 200:
+                print("response with 200")
+                answer = response.json()['choices'][0]['message']['content']#response.json()['choices'][0]['text']
+                print("answer:",answer)
+                # Append bot's response to the chat history
+                ###session['chat_history']=prompt+answer
+                session['msg_history'].append({"role": "assistant", "content": answer})
+                print("chat_history:",session['chat_history'])
 
-    if response.status_code == 200:
-        print("response with 200")
-        answer = response.json()['choices'][0]['message']['content']#response.json()['choices'][0]['text']
-        # Append bot's response to the chat history
-        ###session['chat_history']=prompt+answer
-        session['msg_history'].append({"role": "assistant", "content": answer})
-        print("chat_history:",session['chat_history'])
-        #session['user'].append(question)
-        #session['assistant'].append(answer)
-        return jsonify({'answer': answer})
+                data = extract_json(answer)
+                if 'method' not in data or 'content' not in data:
+                    return jsonify({'error': 'Invalid JSON format. Please provide the answer in the specified format.'}), 400
+                elif data['method'] not in ['DirectAnswer', 'SearchEngine', 'python']:
+                    return jsonify({'error': 'Invalid method. Please choose one of the following: "DirectAnswer", "SearchEngine", or "python".'}), 400
+                elif data['method'] == 'DirectAnswer':
+                    return jsonify({'answer': data['content']+ f' (Tool used: {tool_used} for the answer)'})
+                elif data['method'] == 'SearchEngine':
+                    tool_used += 'SearchEngine '
+                    output = retrieve_web_data(data['content'])
+                    prompt = f'Here are the search results obtained using the keywords you provided: "{output}". Please review these results and determine if they sufficiently answer the original question. Respond in strict JSON format with two keys: "method" and "content". If the results are sufficient, use "DirectAnswer" for "method" and provide the answer in "content". If the results are not sufficient and you suggest conducting another search, use "SearchEngine" for "method" and provide the new keywords in "content". No other text or explanation should be provided outside of the JSON response.'
+                elif data['method'] == 'python':
+                    tool_used += 'python '
+                    code = data['content']
+                    output = subprocess.run(
+                        ["python3", "-c", code],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        )
+                    stdout = output.stdout.decode()
+                    stderr = output.stderr.decode()
+                    output = f"stdout: {stdout}, stderr: {stderr}"
+                    print(f"Round {i} python output: {output}")
+                    prompt = f'The Python code you provided has been executed, and the result is as follows: "{output}". Please review this output and determine if it correctly answers the original question. Respond in strict JSON format with two keys: "method" and "content". If the execution was successful and the result is correct, use "DirectAnswer" for "method" and provide the answer in "content". If there was an error and you need to provide corrected Python code, use "python" for "method" and include the revised code in "content". No other text or explanation should be provided outside of the JSON response.'
+                i += 1
+                print(f"Round {i} prompt: {prompt}")
+                session['msg_history'].append({"role": "user", "content": prompt})
+                data = {
+                    "mode": "instruct",
+                    "messages": session['msg_history']
+                }
+                response = requests.post(host, headers=headers, json=data, verify=False)
+            else:
+                print("response with error")
+                return jsonify({'error': 'Failed to fetch response from OpenAI'}), 500
     else:
-        print("response with error")
-        return jsonify({'error': 'Failed to fetch response from OpenAI'}), 500
+        max_tokens = 1024
+        min_p = 0.9
+        top_k = 1
+        top_p = 0.9
+        temperature=0.8
+        inst_beg = "[INST]"
+        inst_end = "[/INST]"
+        prompt = session['chat_history']+'[INST]'+question+'[/INST]'
+        print("prompt:",prompt)
+        #print("user:",session['user'])
+        #print("assistant:",session['assistant'])
+
+        #payload = {
+        #    "prompt": prompt,
+        #    "model": "gpt-3.5-turbo-instruct",
+        #    "max_tokens": max_tokens,
+        #    "n_predict": max_tokens,
+        #    "min_p": min_p,
+        #    "stream": False,
+        #    "seed": random.randint(
+        #        1000002406736107, 3778562406736107
+        #    ),  # Was acting weird without this
+        #    "top_k": top_k,
+        #    "top_p": top_p,
+        #    "stop": ["</s>", inst_beg, inst_end],
+        #    "temperature": temperature,
+        #}
+        #
+        #
+        #response = requests.post(
+        #    host,
+        #    headers={
+        #        "Accept": "application/json",
+        #        "Content-Type": "application/json",
+        #        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        #    },
+        #    json=payload,
+        #    timeout=360,
+        #    stream=False,
+        #)
+        session['msg_history'].append({"role": "user", "content": question})
+
+        headers = {
+            "Content-Type": "application/json"
+        }
+        data = {
+            "mode": "instruct",
+            "messages": session['msg_history']
+        }
+        response = requests.post(host, headers=headers, json=data, verify=False)
+        print("request sent:",data)
+
+
+
+
+
+        if response.status_code == 200:
+            print("response with 200")
+            answer = response.json()['choices'][0]['message']['content']#response.json()['choices'][0]['text']
+            # Append bot's response to the chat history
+            ###session['chat_history']=prompt+answer
+            session['msg_history'].append({"role": "assistant", "content": answer})
+            print("chat_history:",session['chat_history'])
+            #session['user'].append(question)
+            #session['assistant'].append(answer)
+            return jsonify({'answer': answer})
+        else:
+            print("response with error")
+            return jsonify({'error': 'Failed to fetch response from OpenAI'}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0',port=8000,debug=True)

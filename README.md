@@ -9,6 +9,7 @@ This is a simple chat WebUI developed by Dr. Nicefellow. It is designed to provi
 - User-friendly chat interface
 - Backend engine powered by OpenAI API
 - Support for Llama Chat/Mistral Instruct prompt template
+- Tool usage support for Python interpreter and search engine
 
 ## Requirements
 
@@ -23,8 +24,8 @@ This is a simple chat WebUI developed by Dr. Nicefellow. It is designed to provi
 2. Start the backend server and obtain the API key and host address.
 2. Install the required packages using pip.
 3. Create a `config.yml` file with the example example.config.yml and set the OpenAI API key.
-3. Set your OpenAI API key in the `config.yml` file
-4. Run the application:
+4. Set your OpenAI API key in the `config.yml` file
+5. Run the application:
    ```
    python app.py
    ```
@@ -33,10 +34,16 @@ This is a simple chat WebUI developed by Dr. Nicefellow. It is designed to provi
 
 Open your web browser and navigate to `http://localhost:7860`. You can start chatting with the bot by typing your message in the chat input field and pressing the "Send" button.
 
+
+## Tool Usage
+
+This project supports the use of the Python interpreter and search engine. The Python interpreter is used for executing Python code, while the search engine is used for retrieving web data based on search terms.
+
 ## TODO
 
-- [ ] Add support for other chat formats
-- [ ] Add function calling
+- [x] Add support for other chat formats
+- [x] Add function calling
+- [ ] Add RAG support
 
 ## Disclaimer
 
