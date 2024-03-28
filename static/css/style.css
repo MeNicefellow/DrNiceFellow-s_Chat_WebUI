@@ -18,6 +18,24 @@ body {
     background-image: url('/background_image');
     background-size: cover;
 }
+#tool-usage {
+    margin-right: 10px;
+}
+
+label[for="tool-usage"] {
+    font-size: 14px;
+    color: #333;
+}
+.tool-usage-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #ccc; /* Add a border */
+    padding: 10px; /* Add some padding */
+    border-radius: 5px; /* Round the corners */
+    background-color: #efefef; /* Set the background color to match the buttons */
+    color: white; /* Set the text color to white for contrast */
+}
 #chat-container {
     width: 40%;
     height: 70%;

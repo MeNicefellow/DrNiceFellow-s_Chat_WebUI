@@ -1,6 +1,7 @@
 function sendMessage() {
     const input = document.getElementById('chat-input');
     const chatBox = document.getElementById('chat-box');
+    const toolUsage = document.getElementById('tool-usage').checked;
     const message = input.value;
     input.value = ''; // Clear input after sending
 
@@ -14,7 +15,7 @@ function sendMessage() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ question: message }),
+            body: JSON.stringify({ question: message, tool_usage: toolUsage }),
             credentials: 'include' // Include cookies with the request
         })
         .then(response => response.json())

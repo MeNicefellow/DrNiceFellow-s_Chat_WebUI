@@ -67,6 +67,8 @@ def home():
 def ask():
     data = request.json
     question = data['question']
+    tool_usage = data.get('tool_usage', False)
+    print("tool_usage:",tool_usage)
 
     if question == 'clear':
         session['chat_history'] = ''
@@ -157,4 +159,4 @@ def ask():
         return jsonify({'error': 'Failed to fetch response from OpenAI'}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',port=7865,debug=True)
+    app.run(host='0.0.0.0',port=8000,debug=True)
