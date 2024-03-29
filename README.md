@@ -53,6 +53,10 @@ This project is intended for personal use. It may contain vulnerabilities and se
 
 This project is licensed under the terms of the Apache 2.0 License.
 
+## Discord Server
+
+Join our Discord server [here](https://discord.gg/xhcBDEM3).
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
