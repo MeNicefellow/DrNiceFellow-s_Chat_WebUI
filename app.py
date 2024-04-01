@@ -96,22 +96,24 @@ def ask():
     if 'msg_history' not in session:
         session['msg_history'] = []
     if tool_usage:
-
-        first_prompt = (
-            f'Please provide the answer to the following question strictly in JSON format, '
-            f'with no additional text or explanation. The JSON response should contain only two keys: '
-            f'"method" and "content". The "method" key can have one of five values: "DirectAnswer", '
-            f'"SearchEngine", "python", "SaveToDB", or "RetrieveFromDB". The "content" key should '
-            f'contain the corresponding output based on the method chosen. For "DirectAnswer", it should '
-            f'be the factual answer to the question posed. For "SearchEngine", it should be the exact '
-            f'search query you would use. For "python", it should be the Python code that would generate '
-            f'the answer. For "SaveToDB", use this method in two cases: when the user provides important '
-            f'information that should be saved for future sessions, or to summarize the content of the '
-            f'current chat session for future reference. The "content" should be the note in natural language you wish to save '
-            f'to the database. For "RetrieveFromDB", use this method when the user asks about or refers to '
-            f'something from a previous session. The "content" should be the query in natural language used to retrieve '
-            f'data from the database. Here is the question: {question}'
-        )
+        if rag:
+            first_prompt = (
+                f'Please provide the answer to the following question strictly in JSON format, '
+                f'with no additional text or explanation. The JSON response should contain only two keys: '
+                f'"method" and "content". The "method" key can have one of five values: "DirectAnswer", '
+                f'"SearchEngine", "python", "SaveToDB", or "RetrieveFromDB". The "content" key should '
+                f'contain the corresponding output based on the method chosen. For "DirectAnswer", it should '
+                f'be the factual answer to the question posed. For "SearchEngine", it should be the exact '
+                f'search query you would use. For "python", it should be the Python code that would generate '
+                f'the answer. For "SaveToDB", use this method in two cases: when the user provides important '
+                f'information that should be saved for future sessions, or to summarize the content of the '
+                f'current chat session for future reference. The "content" should be the note in natural language you wish to save '
+                f'to the database. For "RetrieveFromDB", use this method when the user asks about or refers to '
+                f'something from a previous session. The "content" should be the query in natural language used to retrieve '
+                f'data from the database. Here is the question: {question}'
+            )
+        else:
+            first_prompt = f'Please provide the answer to the following question strictly in JSON format, with no additional text or explanation. The JSON response should contain only two keys: "method" and "content". The "method" key can have one of three values: "DirectAnswer", "SearchEngine", or "python". The "content" key should contain the corresponding output based on the method chosen. For "DirectAnswer", it should be the factual answer to the question posed. For "SearchEngine", it should be the exact search query you would use. For "python", it should be the Python code that would generate the answer. Here is the question: {question}'
         # After performing a "SaveToDB" or "RetrieveFromDB" operation, you will be given a chance to '
         #    f'follow up with a "DirectAnswer" to provide the user with a response based on the newly '
         #    f'updated or retrieved information.
