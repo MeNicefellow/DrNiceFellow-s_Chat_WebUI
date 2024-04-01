@@ -2,14 +2,13 @@
 
 ![Screenshot](/assets/screenshot.png)
 
-This is a simple chat WebUI developed by Dr. Nicefellow. It is designed to provide a user-friendly interface for interacting with a chatbot. The backend engine is powered by OpenAI API, and the backend LLM should support the Llama Chat/Mistral Instruct prompt template. It is tested with OpenAI API extension of text-generation-web-ui.
+This is a simple chat WebUI developed by Dr. Nicefellow. It is designed to provide a user-friendly interface for interacting with a chatbot. The backend engine is powered by OpenAI API, and the backend LLM should support chat template. It is tested with OpenAI API extension of text-generation-web-ui.
 
 ## Features
 
 - User-friendly chat interface
 - Backend engine powered by OpenAI API
-- Support for Llama Chat/Mistral Instruct prompt template
-- Tool usage support for Python interpreter and search engine
+- Tool usage support for Python interpreter and search engine and RAG
 
 ## Requirements
 
@@ -22,10 +21,17 @@ This is a simple chat WebUI developed by Dr. Nicefellow. It is designed to provi
 
 1. Clone the repository
 2. Start the backend server and obtain the API key and host address.
-2. Install the required packages using pip.
-3. Create a `config.yml` file with the example example.config.yml and set the OpenAI API key.
-4. Set your OpenAI API key in the `config.yml` file
-5. Run the application:
+3. Install the required packages using pip. 
+   ```
+   pip install -r requirements.txt
+   ```
+4. Optional: Install the required packages for RAG support using pip.
+   ```
+   pip install -r requirements_rag.txt
+   ```
+5. Create a `config.yml` file with the example example.config.yml and set the OpenAI API key.
+6. Set your OpenAI API key in the `config.yml` file
+7. Run the application:
    ```
    python app.py
    ```
