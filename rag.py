@@ -3,6 +3,7 @@ from llama_index.core.schema import TextNode
 from llama_index.vector_stores.postgres import PGVectorStore
 from llama_index.core.vector_stores import VectorStoreQuery
 import psycopg2
+from datetime import datetime
 
 class DatabaseManager:
     def __init__(self, db_name, host, password, port, user, table_name, embed_dim=384):
@@ -46,8 +47,8 @@ class DatabaseManager:
         )
 
     def save_to_db(self, text_chunks):
-
-        nodes = [TextNode(text=text_chunk) for text_chunk in text_chunks]
+        current_time = datetime.now().isoformat()  # Get the current date and time
+        nodes = [TextNode(text=text_chunk, metadata={"timestamp": current_time}) for text_chunk in text_chunks]
         print("text chunks: ", text_chunks)
 
         for node in nodes:
@@ -66,4 +67,4 @@ class DatabaseManager:
         )
 
         query_result = self.vector_store.query(vector_store_query)
-        return ' '.join(node.get_content() for node in query_result.nodes)
+        return ' '.join(f"{node.get_content()} (Saved on {node.metadata['timestamp']})" for node in query_result.nodes)

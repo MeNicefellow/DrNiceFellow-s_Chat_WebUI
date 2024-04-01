@@ -141,7 +141,6 @@ def ask():
 
                 data = extract_json(answer)
                 print("data:",data)
-                print(data['method'] == 'RetrieveFromDB')
                 if 'method' not in data or 'content' not in data:
                     return jsonify({'error': 'Invalid JSON format. Please provide the answer in the specified format.'}), 400
                 elif data['method'] not in ['DirectAnswer', 'SearchEngine', 'python', 'SaveToDB', 'RetrieveFromDB']:
