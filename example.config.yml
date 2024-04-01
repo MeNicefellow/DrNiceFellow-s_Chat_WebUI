@@ -2,3 +2,10 @@ secret_key: your_secret_key
 openai_api_key: abefsdasadfsda
 user_name: Dr. Nicefellow
 host: http://127.0.0.1:5000/v1/chat/completions
+rag: True
+db_host: localhost
+db_name: chatbot
+db_user: chatbot
+db_password: password
+db_port: 5432
+db_table_name: chatbot

@@ -39,11 +39,31 @@ Open your web browser and navigate to `http://localhost:7860`. You can start cha
 
 This project supports the use of the Python interpreter and search engine. The Python interpreter is used for executing Python code, while the search engine is used for retrieving web data based on automatically generated search terms.
 
+To update the `README.md` file, you can add a new section that describes the RAG feature and its interaction with the PostgreSQL database. Here's a suggestion:
+
+## RAG and PostgreSQL Integration
+
+The software now includes a feature for automatic saving of important chat information to a PostgreSQL database using the RAG (Retrieval-Augmented Generation) model. This information can be automatically fetched for future chats, enhancing the chatbot's ability to provide context-aware responses abd achieving a persistent chatbot.
+
+To use this feature, you need to provide the necessary database configuration in the `config.yml` file. The required parameters include the database name, host, password, port, user, and table name.
+
+Please note that this feature requires additional dependencies. These dependencies are listed in the `requirements_rag.txt` file.
+
+
+For the `requirements_rag.txt` file, you can list the dependencies as follows:
+
+```plaintext
+psycopg2-binary==2.9.1
+llama_index==0.1.0
+```
+
+Please note that the versions of the dependencies are hypothetical and you should use the versions that are compatible with your project.
+
 ## TODO
 
 - [x] Add support for other chat formats
 - [x] Add function calling
-- [ ] Add RAG support
+- [x] Add RAG support
 
 ## Disclaimer
 

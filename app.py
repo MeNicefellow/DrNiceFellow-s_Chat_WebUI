@@ -18,6 +18,17 @@ OPENAI_API_KEY = cfg['openai_api_key']
 user = cfg['user_name']
 host = cfg['host']
 
+rag = cfg['rag']
+if rag:
+    from rag import DatabaseManager
+    db_name = cfg['db_name']
+    db_host = cfg['db_host']
+    password = cfg['db_password']
+    port = cfg['db_port']
+    user = cfg['db_user']
+    table_name = cfg['db_table_name']
+    db = DatabaseManager(db_name, db_host, password, port, user, table_name)
+
 # Configure server-side session
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
@@ -86,9 +97,24 @@ def ask():
         session['msg_history'] = []
     if tool_usage:
 
-        first_prompt = f'Please provide the answer to the following question strictly in JSON format, with no additional text or explanation. The JSON response should contain only two keys: "method" and "content". The "method" key can have one of three values: "DirectAnswer", "SearchEngine", or "python". The "content" key should contain the corresponding output based on the method chosen. For "DirectAnswer", it should be the factual answer to the question posed. For "SearchEngine", it should be the exact search query you would use. For "python", it should be the Python code that would generate the answer. Here is the question: {question}'
-
-
+        first_prompt = (
+            f'Please provide the answer to the following question strictly in JSON format, '
+            f'with no additional text or explanation. The JSON response should contain only two keys: '
+            f'"method" and "content". The "method" key can have one of five values: "DirectAnswer", '
+            f'"SearchEngine", "python", "SaveToDB", or "RetrieveFromDB". The "content" key should '
+            f'contain the corresponding output based on the method chosen. For "DirectAnswer", it should '
+            f'be the factual answer to the question posed. For "SearchEngine", it should be the exact '
+            f'search query you would use. For "python", it should be the Python code that would generate '
+            f'the answer. For "SaveToDB", use this method in two cases: when the user provides important '
+            f'information that should be saved for future sessions, or to summarize the content of the '
+            f'current chat session for future reference. The "content" should be the note in natural language you wish to save '
+            f'to the database. For "RetrieveFromDB", use this method when the user asks about or refers to '
+            f'something from a previous session. The "content" should be the query in natural language used to retrieve '
+            f'data from the database. Here is the question: {question}'
+        )
+        # After performing a "SaveToDB" or "RetrieveFromDB" operation, you will be given a chance to '
+        #    f'follow up with a "DirectAnswer" to provide the user with a response based on the newly '
+        #    f'updated or retrieved information.
 
         session['msg_history'].append({"role": "user", "content": first_prompt})
 
@@ -114,9 +140,11 @@ def ask():
                 print("chat_history:",session['chat_history'])
 
                 data = extract_json(answer)
+                print("data:",data)
+                print(data['method'] == 'RetrieveFromDB')
                 if 'method' not in data or 'content' not in data:
                     return jsonify({'error': 'Invalid JSON format. Please provide the answer in the specified format.'}), 400
-                elif data['method'] not in ['DirectAnswer', 'SearchEngine', 'python']:
+                elif data['method'] not in ['DirectAnswer', 'SearchEngine', 'python', 'SaveToDB', 'RetrieveFromDB']:
                     return jsonify({'error': 'Invalid method. Please choose one of the following: "DirectAnswer", "SearchEngine", or "python".'}), 400
                 elif data['method'] == 'DirectAnswer':
                     return jsonify({'answer': data['content']+ f' (Tool used: {tool_used} for the answer)'})
@@ -137,6 +165,21 @@ def ask():
                     output = f"stdout: {stdout}, stderr: {stderr}"
                     print(f"Round {i} python output: {output}")
                     prompt = f'The Python code you provided has been executed, and the result is as follows: "{output}". Please review this output and determine if it correctly answers the original question. Respond in strict JSON format with two keys: "method" and "content". If the execution was successful and the result is correct, use "DirectAnswer" for "method" and provide the answer in "content". If there was an error and you need to provide corrected Python code, use "python" for "method" and include the revised code in "content". No other text or explanation should be provided outside of the JSON response.'
+                elif data['method'] == 'SaveToDB':
+                    tool_used += 'SaveToDB '
+                    notes = [data['content']]
+                    print("notes to save:",notes)
+                    db.save_to_db(notes)
+                    prompt = f'The chat history has been saved to the database. If you would like to follow up with a response based on this information, please provide a "DirectAnswer" in JSON format with the answer to the original question. If you would like to save additional information or perform another operation, please provide the corresponding JSON response with the "method" and "content" keys.'
+                elif data['method'] == 'RetrieveFromDB':
+                    tool_used += 'RetrieveFromDB '
+                    query = data['content']
+                    print("query to retrieve:",query)
+                    output = db.query_db(query)
+                    print("output from db:",output)
+                    prompt = f'The information retrived from the database is as follows: "{output}". Please review this information and determine if it sufficiently answers the original question. Respond in strict JSON format with two keys: "method" and "content". If the retrieved information is sufficient, use "DirectAnswer" for "method" and provide the answer in "content". If the information is not sufficient and you need to perform another operation, use the corresponding method for "method" and provide the necessary "content". No other text or explanation should be provided outside of the JSON response.'
+                else:
+                    print("Invalid method:",data['method'])
                 i += 1
                 print(f"Round {i} prompt: {prompt}")
                 session['msg_history'].append({"role": "user", "content": prompt})

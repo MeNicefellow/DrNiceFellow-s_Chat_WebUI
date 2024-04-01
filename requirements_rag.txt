@@ -1,0 +1,7 @@
+llama-index-vector-stores-postgres
+llama-index-embeddings-huggingface
+psycopg2-binary
+pgvector
+asyncpg
+"sqlalchemy[asyncio]"
+greenlet
