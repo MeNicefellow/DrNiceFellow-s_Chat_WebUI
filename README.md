@@ -73,7 +73,7 @@ Please note that the versions of the dependencies are hypothetical and you shoul
 
 ## Disclaimer
 
-This project is intended for personal use. It may contain vulnerabilities and security concerns. Users should use this project at their own risk. The developers of this project will not be responsible for any damage or issues that may arise from using this project.
+This project is intended for personal use. Given that this chatbot has the ability to write Python code, it's important to be aware of potential security risks. Users should be cautious when interacting with the bot, especially when executing generated code. The bot's code generation capability could potentially be exploited by malicious users to execute harmful commands or scripts. Users should use this project at their own risk. The developers of this project will not be responsible for any damage or issues that may arise from using this project.
 
 ## License
 
