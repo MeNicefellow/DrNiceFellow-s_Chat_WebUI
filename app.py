@@ -72,7 +72,7 @@ def home():
     if 'chat_history' not in session:
         session['chat_history'] = ''
     if 'msg_history' not in session:
-        session['msg_history'] = []
+        session['msg_history'] = [{"role": "user", "content": f"You are a friend of {user}"}]
     title = user+"'s Personal Assistant"  # Replace 'xx' with the desired name
     return render_template('index.html', title=title)
 
@@ -85,7 +85,7 @@ def ask():
 
     if question == 'clear':
         session['chat_history'] = ''
-        session['msg_history'] = []
+        session['msg_history'] = [{"role": "user", "content": f"You are a friend of {user}"}]
         #session['user'] = []
         #session['assistant'] = []
         return jsonify({'answer': 'Chat history cleared!'})
@@ -94,7 +94,7 @@ def ask():
     if 'chat_history' not in session:
         session['chat_history'] = ''
     if 'msg_history' not in session:
-        session['msg_history'] = []
+        session['msg_history'] = [{"role": "user", "content": f"You are a friend of {user}"}]
     if tool_usage:
         if rag:
             first_prompt = (
@@ -132,6 +132,7 @@ def ask():
         i = 0
         tool_used = ''
         while i<5:
+            print("=====================================")
             if response.status_code == 200:
                 print("response with 200")
                 answer = response.json()['choices'][0]['message']['content']#response.json()['choices'][0]['text']
@@ -189,6 +190,9 @@ def ask():
                     "messages": session['msg_history']
                 }
                 response = requests.post(host, headers=headers, json=data, verify=False)
+                print('------')
+                print("response:",response)
+                print('------')
             else:
                 print("response with error")
                 return jsonify({'error': 'Failed to fetch response from OpenAI'}), 500
@@ -264,4 +268,4 @@ def ask():
             return jsonify({'error': 'Failed to fetch response from OpenAI'}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',port=8000,debug=True)
+    app.run(host='0.0.0.0',port=8000,debug=False)

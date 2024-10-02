@@ -35,6 +35,37 @@ This is a simple chat WebUI developed by Dr. Nicefellow. It is designed to provi
    ```
    python app.py
    ```
+   
+## Database Preparation
+
+Before running the application, you need to prepare the PostgreSQL database. Follow these steps:
+
+1. Start the PostgreSQL service:
+   ```
+   service postgresql start
+   ```
+2. Switch to the `postgres` user:
+   ```
+   su - postgres
+   ```
+3. Enter the PostgreSQL command line:
+   ```
+   psql
+   ```
+4. Create a new user named `chatbot` with the password `password`:
+   ```
+   CREATE USER chatbot WITH PASSWORD 'password';
+   ```
+5. Grant superuser privileges to the `chatbot` user:
+   ```
+   ALTER ROLE chatbot SUPERUSER;
+   ```
+6. Create a new database named `chatbot`:
+   ```
+   CREATE DATABASE chatbot;
+   ```
+
+After these steps, your PostgreSQL database is ready for the application.
 
 ## Usage
 
@@ -64,6 +95,15 @@ llama_index==0.1.0
 ```
 
 Please note that the versions of the dependencies are hypothetical and you should use the versions that are compatible with your project.
+
+## Database Visualization
+
+To visualize the database, I recommend using a tool like [pgweb](https://github.com/sosedoff/pgweb). Below is a command to use it:
+    
+    ```bash
+    ./pgweb_linux_amd64  --bind=0.0.0.0 --listen=7861 --url="postgresql://chatbot:password@localhost:5432/chatbot"
+    
+    ```
 
 ## TODO
 

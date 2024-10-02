@@ -3,5 +3,5 @@ llama-index-embeddings-huggingface
 psycopg2-binary
 pgvector
 asyncpg
-"sqlalchemy[asyncio]"
+sqlalchemy[asyncio]
 greenlet
