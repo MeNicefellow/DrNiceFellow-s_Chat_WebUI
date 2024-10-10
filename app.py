@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, jsonify#, session
-from flask_session import Session  # You may need to install this with pip
+from flask import Flask, render_template, request, jsonify
+from flask_session import Session
 import requests
 from flask import request, send_from_directory
 from utils import *
@@ -32,10 +32,6 @@ if rag:
 # Configure server-side session
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
-#session_dir = os.path.join(app.instance_path, 'session')
-#if not os.path.exists(session_dir):
-#    os.makedirs(session_dir)
-#app.config["SESSION_FILE_DIR"] = session_dir
 Session(app)
 
 from flask import make_response
@@ -206,37 +202,6 @@ def ask():
         inst_end = "[/INST]"
         prompt = session['chat_history']+'[INST]'+question+'[/INST]'
         print("prompt:",prompt)
-        #print("user:",session['user'])
-        #print("assistant:",session['assistant'])
-
-        #payload = {
-        #    "prompt": prompt,
-        #    "model": "gpt-3.5-turbo-instruct",
-        #    "max_tokens": max_tokens,
-        #    "n_predict": max_tokens,
-        #    "min_p": min_p,
-        #    "stream": False,
-        #    "seed": random.randint(
-        #        1000002406736107, 3778562406736107
-        #    ),  # Was acting weird without this
-        #    "top_k": top_k,
-        #    "top_p": top_p,
-        #    "stop": ["</s>", inst_beg, inst_end],
-        #    "temperature": temperature,
-        #}
-        #
-        #
-        #response = requests.post(
-        #    host,
-        #    headers={
-        #        "Accept": "application/json",
-        #        "Content-Type": "application/json",
-        #        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        #    },
-        #    json=payload,
-        #    timeout=360,
-        #    stream=False,
-        #)
         session['msg_history'].append({"role": "user", "content": question})
 
         headers = {
