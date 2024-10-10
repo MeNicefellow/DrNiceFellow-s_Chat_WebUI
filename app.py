@@ -155,7 +155,8 @@ def ask():
         }
         data = {
             "mode": "instruct",
-            "messages": session['msg_history']
+            "messages": session['msg_history'],
+            "temperature": 0.1,
         }
         response = requests.post(host, headers=headers, json=data, verify=False)
         print("request sent:", data)
@@ -181,7 +182,7 @@ def ask():
                 elif data['method'] == 'SearchEngine':
                     tool_used += 'SearchEngine '
                     output = retrieve_web_data(data['content'])
-                    prompt = f'Here are the search results obtained using the keywords you provided: "{output}". Please review these results and determine if they sufficiently answer the original question. Respond in strict JSON format with two keys: "method" and "content". If the results are sufficient, use "DirectAnswer" for "method" and provide the answer in "content". If the results are not sufficient and you suggest conducting another search, use "SearchEngine" for "method" and provide the new keywords in "content". No other text or explanation should be provided outside of the JSON response.'
+                    prompt = f'Here are the search results obtained using the keywords you provided: "{output}". Please review these results and determine if they sufficiently answer the original question. Respond in strict JSON format with two keys: "method" and "content". If the results are sufficient, use "DirectAnswer" for "method" and provide the answer in "content". If the results are not sufficient and you suggest conducting another search, use "SearchEngine" for "method" and provide the new keywords in "content". No other text or explanation should be provided outside of the JSON response. I repeat, reply in strict JSON format with two keys: "method" and "content".'
                 elif data['method'] == 'python':
                     tool_used += 'python '
                     code = data['content']
@@ -233,7 +234,8 @@ def ask():
                 session['msg_history'].append({"role": "user", "content": prompt})
                 data = {
                     "mode": "instruct",
-                    "messages": session['msg_history']
+                    "messages": session['msg_history'],
+                    "temperature": 0.1
                 }
                 response = requests.post(host, headers=headers, json=data, verify=False)
                 print('------')

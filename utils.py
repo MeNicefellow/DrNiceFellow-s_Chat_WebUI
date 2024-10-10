@@ -19,7 +19,7 @@ def extract_site_content(web_url):
         soup = BeautifulSoup(response.text, "lxml")
         raw_text = soup.get_text()
         cleaned_text = ''.join(line.strip() for line in raw_text.split('\n'))
-        return cleaned_text
+        return cleaned_text[:256]
     except Exception as e:
         print(e)
         return "Error: Requested site couldn't be viewed. Please inform in your response that the informations may not be up to date or correct."

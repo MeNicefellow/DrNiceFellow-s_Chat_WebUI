@@ -25,6 +25,11 @@ function sendMessage() {
                 chatBox.innerHTML += `<div class="bot-message">Bot: ${data.answer}</div>`;
                 // Scroll to the bottom
                 chatBox.scrollTop = chatBox.scrollHeight;
+                
+                // Update calendar events
+                if (typeof window.fetchCalendarEvents === 'function') {
+                    window.fetchCalendarEvents();
+                }
             } else if (data.error) {
                 console.error('Error:', data.error);
             }
