@@ -7,7 +7,7 @@ function sendMessage() {
 
     if (message) {
         // Display the user's message
-        chatBox.innerHTML += `<div>User: ${message}</div>`;
+        chatBox.innerHTML += `<div class="user-message">User: ${message}</div>`;
 
         // Send the message to Flask with credentials included
         fetch('/ask', {
@@ -20,21 +20,29 @@ function sendMessage() {
         })
         .then(response => response.json())
         .then(data => {
-            // Display the bot's response
-            chatBox.innerHTML += `<div>Bot: ${data.answer}</div>`;
+            if (data.answer) {
+                // Display the bot's response
+                chatBox.innerHTML += `<div class="bot-message">Bot: ${data.answer}</div>`;
+                // Scroll to the bottom
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } else if (data.error) {
+                console.error('Error:', data.error);
+            }
         })
         .catch((error) => {
             console.error('Error:', error);
         });
     }
 }
+
 document.getElementById('clear-btn').addEventListener('click', function() {
     fetch('/ask', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ question: 'clear' })
+        body: JSON.stringify({ question: 'clear' }),
+        credentials: 'include'
     })
     .then(response => response.json())
     .then(data => {
@@ -66,3 +74,36 @@ document.getElementById('change-background').addEventListener('click', function(
             document.body.style.backgroundImage = 'url(' + nextImage + ')';
         });
 });
+
+// Polling function to fetch pending messages
+function fetchPendingMessages() {
+    fetch('/get_pending_messages', {
+        method: 'GET',
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.messages && data.messages.length > 0) {
+            const chatBox = document.getElementById('chat-box');
+            data.messages.forEach(msg => {
+                if (msg.role === 'assistant') {
+                    chatBox.innerHTML += `<div class="bot-message">Bot: ${msg.content}</div>`;
+                }
+                // You can handle other roles if needed
+            });
+            // Scroll to the bottom
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    })
+    .catch((error) => {
+        console.error('Error fetching pending messages:', error);
+    });
+}
+
+// Start polling every 30 seconds
+setInterval(fetchPendingMessages, 30000); // Poll every 30,000 milliseconds (30 seconds)
+
+// Optionally, fetch pending messages when the page loads
+window.onload = function() {
+    fetchPendingMessages();
+};

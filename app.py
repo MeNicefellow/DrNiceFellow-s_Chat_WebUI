@@ -40,6 +40,7 @@ Session(app)
 
 from flask import make_response
 
+pending_messages = []  # Global list to store pending assistant messages
 session = {}
 pending_reminders = []  # Global list to store pending reminders
 
@@ -237,12 +238,17 @@ def ask():
             print("response with error")
             return jsonify({'error': 'Failed to fetch response from OpenAI'}), 500
 
-@app.route('/get_reminders', methods=['GET'])
-def get_reminders():
-    global pending_reminders
-    reminders = pending_reminders.copy()
-    pending_reminders.clear()
-    return jsonify({'reminders': reminders})
+@app.route('/get_pending_messages', methods=['GET'])
+def get_pending_messages():
+    global pending_messages
+    messages = pending_messages.copy()
+    pending_messages.clear()
+    # Append the messages to the session's message history
+    if 'msg_history' not in session:
+        session['msg_history'] = [system_prompt]
+    for msg in messages:
+        session['msg_history'].append(msg)
+    return jsonify({'messages': messages})
 
 def background_calendar_checker():
     global pending_reminders
@@ -259,9 +265,8 @@ def background_calendar_checker():
                 event_id, event_content, event_datetime = event
                 # Check if we have already reminded the user about this event
                 if event_id not in reminded_events:
-                    # Prompt the LLM whether to remind the user
-                    # Build a prompt to the LLM
-                    llm_prompt = f"The user has an upcoming event: '{event_content}' at {event_datetime}. You usually remind the user 15 minutes in advance. The current time is {now}. Should you send a reminder now? Please respond with 'Yes' or 'No'."
+                    # Prompt the LLM to generate the reminder message
+                    llm_prompt = f'You have an upcoming event: "{event_content}" at {event_datetime}. The current time is {now}. You usually remind the user 15 minutes in advance. Please generate a reminder message to send to the user. Respond in strict JSON format with one key: "content". And the content is the reminder message you want to send to the user.'
                     # Send this prompt to the LLM
                     headers = {
                         "Content-Type": "application/json"
@@ -276,12 +281,12 @@ def background_calendar_checker():
                     response = requests.post(host, headers=headers, json=data, verify=False)
                     if response.status_code == 200:
                         llm_response = response.json()['choices'][0]['message']['content']
-                        print("LLM response on calendar events:", llm_response)
-                        if 'Yes' in llm_response:
-                            # Send the reminder to the front end
-                            pending_reminders.append(f"Reminder: {event_content} at {event_datetime}")
-                            # Mark this event as reminded
-                            reminded_events.add(event_id)
+                        llm_response = json.loads(llm_response)
+                        llm_response = llm_response['content']
+                        # Add the reminder message to the pending messages
+                        pending_messages.append({"role": "assistant", "content": llm_response})
+                        # Mark this event as reminded
+                        reminded_events.add(event_id)
                     else:
                         print("Failed to get response from LLM for event reminder")
             # Sleep for 60 seconds
