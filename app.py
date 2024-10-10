@@ -17,7 +17,7 @@ app.secret_key = cfg['secret_key']
 OPENAI_API_KEY = cfg['openai_api_key']
 user = cfg['user_name']
 host = cfg['host']
-
+system_prompt = {"role": "system", "content": f"You are a friend of {db_user}"}
 rag = cfg['rag']
 if rag:
     from rag import DatabaseManager
@@ -25,9 +25,9 @@ if rag:
     db_host = cfg['db_host']
     password = cfg['db_password']
     port = cfg['db_port']
-    user = cfg['db_user']
+    db_user = cfg['db_user']
     table_name = cfg['db_table_name']
-    db = DatabaseManager(db_name, db_host, password, port, user, table_name)
+    db = DatabaseManager(db_name, db_host, password, port, db_user, table_name)
 
 # Configure server-side session
 app.config["SESSION_PERMANENT"] = False
@@ -72,8 +72,8 @@ def home():
     if 'chat_history' not in session:
         session['chat_history'] = ''
     if 'msg_history' not in session:
-        session['msg_history'] = [{"role": "user", "content": f"You are a friend of {user}"}]
-    title = user+"'s Personal Assistant"  # Replace 'xx' with the desired name
+        session['msg_history'] = [system_prompt]
+    title = user + "'s Personal Assistant"  # Replace 'xx' with the desired name
     return render_template('index.html', title=title)
 
 @app.route('/ask', methods=['POST'])
@@ -85,7 +85,7 @@ def ask():
 
     if question == 'clear':
         session['chat_history'] = ''
-        session['msg_history'] = [{"role": "user", "content": f"You are a friend of {user}"}]
+        session['msg_history'] = [system_prompt]
         #session['user'] = []
         #session['assistant'] = []
         return jsonify({'answer': 'Chat history cleared!'})
@@ -94,7 +94,7 @@ def ask():
     if 'chat_history' not in session:
         session['chat_history'] = ''
     if 'msg_history' not in session:
-        session['msg_history'] = [{"role": "user", "content": f"You are a friend of {user}"}]
+        session['msg_history'] = [system_prompt]
     if tool_usage:
         if rag:
             first_prompt = (
