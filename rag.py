@@ -19,10 +19,10 @@ class DatabaseManager:
         self.vector_store = self._create_vector_store()
         try:
             with self.conn.cursor() as c:
-                #c.execute(f"DROP DATABASE IF EXISTS {self.db_name}")
                 c.execute(f"CREATE DATABASE {self.db_name}")
         except Exception as e:
             print(f"Error creating database: {e} because it already exists")
+        self._create_calendar_table()
 
     def _connect_to_db(self):
         conn = psycopg2.connect(
@@ -46,8 +46,37 @@ class DatabaseManager:
             embed_dim=self.embed_dim,
         )
 
+    def _create_calendar_table(self):
+        with self.conn.cursor() as cursor:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS calendar_events (
+                    id SERIAL PRIMARY KEY,
+                    event_content TEXT,
+                    event_datetime TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            self.conn.commit()
+
+    def add_calendar_event(self, event_content, event_datetime):
+        with self.conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO calendar_events (event_content, event_datetime)
+                VALUES (%s, %s)
+            """, (event_content, event_datetime))
+            self.conn.commit()
+        print(f"Added event '{event_content}' at {event_datetime} to the calendar.")
+
+    def get_upcoming_events(self, start_time, end_time):
+        with self.conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, event_content, event_datetime FROM calendar_events
+                WHERE event_datetime >= %s AND event_datetime <= %s
+            """, (start_time, end_time))
+            return cursor.fetchall()
+
     def save_to_db(self, text_chunks):
-        current_time = datetime.now().isoformat()  # Get the current date and time
+        current_time = datetime.now().isoformat()
         nodes = [TextNode(text=text_chunk, metadata={"timestamp": current_time}) for text_chunk in text_chunks]
         print("text chunks: ", text_chunks)
 

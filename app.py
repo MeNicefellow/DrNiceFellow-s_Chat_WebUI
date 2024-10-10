@@ -5,7 +5,11 @@ from flask import request, send_from_directory
 from utils import *
 import subprocess
 import random
-
+import threading
+import time
+from datetime import datetime, timedelta
+from dateutil.parser import parse as parse_datetime
+import traceback
 app = Flask(__name__)
 import yaml
 import os
@@ -17,7 +21,7 @@ app.secret_key = cfg['secret_key']
 OPENAI_API_KEY = cfg['openai_api_key']
 user = cfg['user_name']
 host = cfg['host']
-system_prompt = {"role": "system", "content": f"You are a friend of {db_user}"}
+system_prompt = {"role": "system", "content": f"You are a friend of {user}"}
 rag = cfg['rag']
 if rag:
     from rag import DatabaseManager
@@ -37,10 +41,12 @@ Session(app)
 from flask import make_response
 
 session = {}
+pending_reminders = []  # Global list to store pending reminders
 
 @app.route('/assets/backgrounds/<path:filename>')
 def custom_static(filename):
     return send_from_directory('assets/backgrounds', filename)
+
 @app.route('/next_background_image')
 def next_background_image():
     current_image = request.args.get('current_image')
@@ -49,6 +55,7 @@ def next_background_image():
     next_index = (current_index + 1) % len(images)  # Loop back to the first image
     next_image = images[next_index]
     return jsonify({'image_name': next_image})
+
 @app.route('/background_image')
 def background_image():
     # Assuming the first image is the default background
@@ -77,15 +84,12 @@ def ask():
     data = request.json
     question = data['question']
     tool_usage = data.get('tool_usage', False)
-    print("tool_usage:",tool_usage)
+    print("tool_usage:", tool_usage)
 
     if question == 'clear':
         session['chat_history'] = ''
         session['msg_history'] = [system_prompt]
-        #session['user'] = []
-        #session['assistant'] = []
         return jsonify({'answer': 'Chat history cleared!'})
-
 
     if 'chat_history' not in session:
         session['chat_history'] = ''
@@ -93,11 +97,13 @@ def ask():
         session['msg_history'] = [system_prompt]
     if tool_usage:
         if rag:
+            now = datetime.now()
             first_prompt = (
+                f'Current time: {str(now)}. '
                 f'Please provide the answer to the following question strictly in JSON format, '
                 f'with no additional text or explanation. The JSON response should contain only two keys: '
-                f'"method" and "content". The "method" key can have one of five values: "DirectAnswer", '
-                f'"SearchEngine", "python", "SaveToDB", or "RetrieveFromDB". The "content" key should '
+                f'"method" and "content". The "method" key can have one of six values: "DirectAnswer", '
+                f'"SearchEngine", "python", "SaveToDB", "RetrieveFromDB", or "AddToCalendar". The "content" key should '
                 f'contain the corresponding output based on the method chosen. For "DirectAnswer", it should '
                 f'be the factual answer to the question posed. For "SearchEngine", it should be the exact '
                 f'search query you would use. For "python", it should be the Python code that would generate '
@@ -106,13 +112,13 @@ def ask():
                 f'current chat session for future reference. The "content" should be the note in natural language you wish to save '
                 f'to the database. For "RetrieveFromDB", use this method when the user asks about or refers to '
                 f'something from a previous session. The "content" should be the query in natural language used to retrieve '
-                f'data from the database. Here is the question: {question}'
+                f'data from the database. For "AddToCalendar", use this method when the user wants to add an event to the calendar. '
+                f'The "content" should be a JSON object with "event_content" and "event_datetime" keys, '
+                f'where "event_datetime" should be in ISO 8601 format (YYYY-MM-DDTHH:MM:SS). '
+                f'Here is the question: {question}'
             )
         else:
-            first_prompt = f'Please provide the answer to the following question strictly in JSON format, with no additional text or explanation. The JSON response should contain only two keys: "method" and "content". The "method" key can have one of three values: "DirectAnswer", "SearchEngine", or "python". The "content" key should contain the corresponding output based on the method chosen. For "DirectAnswer", it should be the factual answer to the question posed. For "SearchEngine", it should be the exact search query you would use. For "python", it should be the Python code that would generate the answer. Here is the question: {question}'
-        # After performing a "SaveToDB" or "RetrieveFromDB" operation, you will be given a chance to '
-        #    f'follow up with a "DirectAnswer" to provide the user with a response based on the newly '
-        #    f'updated or retrieved information.
+            first_prompt = f'Please provide the answer to the following question strictly in JSON format, with no additional text or explanation. The JSON response should contain only two keys: "method" and "content". The "method" key can have one of four values: "DirectAnswer", "SearchEngine", "python", or "AddToCalendar". The "content" key should contain the corresponding output based on the method chosen. For "DirectAnswer", it should be the factual answer to the question posed. For "SearchEngine", it should be the exact search query you would use. For "python", it should be the Python code that would generate the answer. For "AddToCalendar", use this method when the user wants to add an event to the calendar. The "content" should be a JSON object with "event_content" and "event_datetime" keys, where "event_datetime" should be in ISO 8601 format (YYYY-MM-DDTHH:MM:SS). Here is the question: {question}'
 
         session['msg_history'].append({"role": "user", "content": first_prompt})
 
@@ -124,28 +130,26 @@ def ask():
             "messages": session['msg_history']
         }
         response = requests.post(host, headers=headers, json=data, verify=False)
-        print("request sent:",data)
+        print("request sent:", data)
         i = 0
         tool_used = ''
-        while i<5:
+        while i < 5:
             print("=====================================")
             if response.status_code == 200:
                 print("response with 200")
-                answer = response.json()['choices'][0]['message']['content']#response.json()['choices'][0]['text']
-                print("answer:",answer)
-                # Append bot's response to the chat history
-                ###session['chat_history']=prompt+answer
+                answer = response.json()['choices'][0]['message']['content']
+                print("answer:", answer)
                 session['msg_history'].append({"role": "assistant", "content": answer})
-                print("chat_history:",session['chat_history'])
+                print("chat_history:", session['chat_history'])
 
                 data = extract_json(answer)
-                print("data:",data)
+                print("data:", data)
                 if 'method' not in data or 'content' not in data:
                     return jsonify({'error': 'Invalid JSON format. Please provide the answer in the specified format.'}), 400
-                elif data['method'] not in ['DirectAnswer', 'SearchEngine', 'python', 'SaveToDB', 'RetrieveFromDB']:
-                    return jsonify({'error': 'Invalid method. Please choose one of the following: "DirectAnswer", "SearchEngine", or "python".'}), 400
+                elif data['method'] not in ['DirectAnswer', 'SearchEngine', 'python', 'SaveToDB', 'RetrieveFromDB', 'AddToCalendar']:
+                    return jsonify({'error': 'Invalid method. Please choose one of the allowed methods.'}), 400
                 elif data['method'] == 'DirectAnswer':
-                    return jsonify({'answer': data['content']+ f' (Tool used: {tool_used} for the answer)'})
+                    return jsonify({'answer': data['content'] + f' (Tool used: {tool_used} for the answer)'})
                 elif data['method'] == 'SearchEngine':
                     tool_used += 'SearchEngine '
                     output = retrieve_web_data(data['content'])
@@ -157,7 +161,7 @@ def ask():
                         ["python3", "-c", code],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
-                        )
+                    )
                     stdout = output.stdout.decode()
                     stderr = output.stderr.decode()
                     output = f"stdout: {stdout}, stderr: {stderr}"
@@ -166,18 +170,36 @@ def ask():
                 elif data['method'] == 'SaveToDB':
                     tool_used += 'SaveToDB '
                     notes = [data['content']]
-                    print("notes to save:",notes)
+                    print("notes to save:", notes)
                     db.save_to_db(notes)
                     prompt = f'The chat history has been saved to the database. If you would like to follow up with a response based on this information, please provide a "DirectAnswer" in JSON format with the answer to the original question. If you would like to save additional information or perform another operation, please provide the corresponding JSON response with the "method" and "content" keys.'
                 elif data['method'] == 'RetrieveFromDB':
                     tool_used += 'RetrieveFromDB '
                     query = data['content']
-                    print("query to retrieve:",query)
+                    print("query to retrieve:", query)
                     output = db.query_db(query)
-                    print("output from db:",output)
-                    prompt = f'The information retrived from the database is as follows: "{output}". Please review this information and determine if it sufficiently answers the original question. Respond in strict JSON format with two keys: "method" and "content". If the retrieved information is sufficient, use "DirectAnswer" for "method" and provide the answer in "content". If the information is not sufficient and you need to perform another operation, use the corresponding method for "method" and provide the necessary "content". No other text or explanation should be provided outside of the JSON response.'
+                    print("output from db:", output)
+                    prompt = f'The information retrieved from the database is as follows: "{output}". Please review this information and determine if it sufficiently answers the original question. Respond in strict JSON format with two keys: "method" and "content". If the retrieved information is sufficient, use "DirectAnswer" for "method" and provide the answer in "content". If the information is not sufficient and you need to perform another operation, use the corresponding method for "method" and provide the necessary "content". No other text or explanation should be provided outside of the JSON response.'
+                elif data['method'] == 'AddToCalendar':
+                    tool_used += 'AddToCalendar '
+                    content = data['content']
+                    try:
+                        if type(content) is str:
+                            event_data = json.loads(content)
+                        else:
+                            event_data = content
+                        print("event_data:", type(event_data), event_data)
+                        event_content = event_data['event_content']
+                        event_datetime_str = event_data['event_datetime']
+                        event_datetime = parse_datetime(event_datetime_str)
+                        db.add_calendar_event(event_content, event_datetime)
+                        prompt = f'The event "{event_content}" has been added to the calendar on {event_datetime_str}. If you would like to follow up with a response, please provide a "DirectAnswer" in JSON format. No other text or explanation should be provided outside of the JSON response.'
+                    except Exception as e:
+                        print(f"Error parsing event data: {e}")
+                        traceback.print_exc()
+                        prompt = f'There was an error adding the event to the calendar. Please ensure the "content" contains a JSON object with "event_content" and "event_datetime" in ISO 8601 format. Respond in JSON format with a "DirectAnswer" explaining the error.'
                 else:
-                    print("Invalid method:",data['method'])
+                    print("Invalid method:", data['method'])
                 i += 1
                 print(f"Round {i} prompt: {prompt}")
                 session['msg_history'].append({"role": "user", "content": prompt})
@@ -187,21 +209,12 @@ def ask():
                 }
                 response = requests.post(host, headers=headers, json=data, verify=False)
                 print('------')
-                print("response:",response)
+                print("response:", response)
                 print('------')
             else:
                 print("response with error")
                 return jsonify({'error': 'Failed to fetch response from OpenAI'}), 500
     else:
-        max_tokens = 1024
-        min_p = 0.9
-        top_k = 1
-        top_p = 0.9
-        temperature=0.8
-        inst_beg = "[INST]"
-        inst_end = "[/INST]"
-        prompt = session['chat_history']+'[INST]'+question+'[/INST]'
-        print("prompt:",prompt)
         session['msg_history'].append({"role": "user", "content": question})
 
         headers = {
@@ -212,25 +225,72 @@ def ask():
             "messages": session['msg_history']
         }
         response = requests.post(host, headers=headers, json=data, verify=False)
-        print("request sent:",data)
-
-
-
-
+        print("request sent:", data)
 
         if response.status_code == 200:
             print("response with 200")
-            answer = response.json()['choices'][0]['message']['content']#response.json()['choices'][0]['text']
-            # Append bot's response to the chat history
-            ###session['chat_history']=prompt+answer
+            answer = response.json()['choices'][0]['message']['content']
             session['msg_history'].append({"role": "assistant", "content": answer})
-            print("chat_history:",session['chat_history'])
-            #session['user'].append(question)
-            #session['assistant'].append(answer)
+            print("chat_history:", session['chat_history'])
             return jsonify({'answer': answer})
         else:
             print("response with error")
             return jsonify({'error': 'Failed to fetch response from OpenAI'}), 500
 
+@app.route('/get_reminders', methods=['GET'])
+def get_reminders():
+    global pending_reminders
+    reminders = pending_reminders.copy()
+    pending_reminders.clear()
+    return jsonify({'reminders': reminders})
+
+def background_calendar_checker():
+    global pending_reminders
+    reminded_events = set()
+    while True:
+        try:
+            # Get the current time and time 15 minutes from now
+            now = datetime.now()
+            reminder_time = now + timedelta(minutes=15)
+            # Get events happening between now and reminder_time
+            events = db.get_upcoming_events(now, reminder_time)
+            print("events:",events)
+            for event in events:
+                event_id, event_content, event_datetime = event
+                # Check if we have already reminded the user about this event
+                if event_id not in reminded_events:
+                    # Prompt the LLM whether to remind the user
+                    # Build a prompt to the LLM
+                    llm_prompt = f"The user has an upcoming event: '{event_content}' at {event_datetime}. You usually remind the user 15 minutes in advance. The current time is {now}. Should you send a reminder now? Please respond with 'Yes' or 'No'."
+                    # Send this prompt to the LLM
+                    headers = {
+                        "Content-Type": "application/json"
+                    }
+                    data = {
+                        "mode": "instruct",
+                        "messages": [
+                            {"role": "system", "content": system_prompt['content']},
+                            {"role": "user", "content": llm_prompt}
+                        ]
+                    }
+                    response = requests.post(host, headers=headers, json=data, verify=False)
+                    if response.status_code == 200:
+                        llm_response = response.json()['choices'][0]['message']['content']
+                        print("LLM response on calendar events:", llm_response)
+                        if 'Yes' in llm_response:
+                            # Send the reminder to the front end
+                            pending_reminders.append(f"Reminder: {event_content} at {event_datetime}")
+                            # Mark this event as reminded
+                            reminded_events.add(event_id)
+                    else:
+                        print("Failed to get response from LLM for event reminder")
+            # Sleep for 60 seconds
+            time.sleep(20)
+        except Exception as e:
+            print(f"Error in background_calendar_checker: {e}")
+            time.sleep(60)
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',port=8000,debug=False)
+    # Start the background thread
+    threading.Thread(target=background_calendar_checker, daemon=True).start()
+    app.run(host='0.0.0.0', port=8000, debug=False)
