@@ -44,6 +44,33 @@ pending_messages = []  # Global list to store pending assistant messages
 session = {}
 pending_reminders = []  # Global list to store pending reminders
 
+
+@app.route('/get_calendar_events', methods=['GET'])
+def get_calendar_events():
+    try:
+        # Get the current time
+        now = datetime.now()
+        # Get events for the next 7 days
+        end_date = now + timedelta(days=7)
+        events = db.get_upcoming_events(now, end_date)
+        
+        # Format events for JSON response
+        formatted_events = []
+        for event in events:
+            event_id, event_content, event_datetime = event
+            formatted_events.append({
+                'id': event_id,
+                'title': event_content,
+                'date': event_datetime.isoformat()
+            })
+        
+        return jsonify(formatted_events)
+    except Exception as e:
+        print(f"Error fetching calendar events: {e}")
+        return jsonify({'error': 'Failed to fetch calendar events'}), 500
+
+
+
 @app.route('/assets/backgrounds/<path:filename>')
 def custom_static(filename):
     return send_from_directory('assets/backgrounds', filename)
@@ -65,7 +92,7 @@ def background_image():
 
 @app.route('/download_chat_history', methods=['GET'])
 def download_chat_history():
-    chat_history = session.get('chat_history', '').replace('[INST]', 'User: ').replace('[/INST]', '\nBot: ')
+    chat_history = session.get('chat_history', '').replace('</s>', 'User: ').replace('</s>', '\nBot: ')
     response = make_response(chat_history)
     response.headers["Content-Disposition"] = "attachment; filename=chat_history.txt"
     return response

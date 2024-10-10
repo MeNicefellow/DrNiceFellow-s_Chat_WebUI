@@ -34,7 +34,8 @@ class DatabaseManager:
         )
         conn.autocommit = True
         return conn
-
+    
+        
     def _create_vector_store(self):
         return PGVectorStore.from_params(
             database=self.db_name,

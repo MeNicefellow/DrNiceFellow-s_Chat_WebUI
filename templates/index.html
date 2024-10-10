@@ -6,6 +6,7 @@
     <title>{{ title }}</title> <!-- This is where the title is set -->
     <link rel="stylesheet" href="/static/css/style.css"> <!-- Link to CSS file -->
     <script src="/static/js/chat.js" defer></script>
+    <script src="/static/js/calendar.js" defer></script> <!-- New JavaScript file for calendar functionality -->
 </head>
 <body>
     <div id="chat-container">
@@ -17,10 +18,18 @@
             <button onclick="window.location.href='{{ url_for('download_chat_history') }}'" id="download-btn">Download Chat History</button>
             <button id="change-background">Change Background</button>
             <button id="clear-btn">Clear Chat History</button>
-<div class="tool-usage-group">
-    <label for="tool-usage">Allow tool usage</label>
-    <input type="checkbox" id="tool-usage" name="tool-usage" checked>
-</div>
+            <div class="tool-usage-group">
+                <label for="tool-usage">Allow tool usage</label>
+                <input type="checkbox" id="tool-usage" name="tool-usage" checked>
+            </div>
+        </div>
+    </div>
+
+    <!-- Updated calendar events section -->
+    <div id="calendar-container">
+        <div id="calendar-title">Upcoming Events</div>
+        <div id="event-list">
+            <!-- Events will be dynamically inserted here -->
         </div>
     </div>
 </body>

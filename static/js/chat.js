@@ -75,7 +75,50 @@ document.getElementById('change-background').addEventListener('click', function(
         });
 });
 
-// Polling function to fetch pending messages
+// Request notification permission
+document.addEventListener('DOMContentLoaded', function () {
+    if (!Notification) {
+        alert('Desktop notifications not available in your browser.');
+        return;
+    }
+
+    if (Notification.permission !== 'granted')
+        Notification.requestPermission();
+});
+
+// Function to play notification sound
+// Function to play a beep sound
+function playSound() {
+    let context = new (window.AudioContext || window.webkitAudioContext)();
+    let oscillator = context.createOscillator();
+    let gainNode = context.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(context.destination);
+
+    gainNode.gain.value = 0.1; // volume
+    oscillator.frequency.value = 1000; // frequency
+    oscillator.type = 'sine'; // type of sound
+
+    oscillator.start(context.currentTime); // play now
+    oscillator.stop(context.currentTime + 0.3); // stop playing in 0.3 second
+}
+// Function to show browser notification
+function showNotification(content) {
+    if (Notification.permission !== 'granted')
+        Notification.requestPermission();
+    else {
+        let notification = new Notification('New Reminder', {
+            body: content,
+        });
+
+        notification.onclick = function () {
+            window.focus();
+        };
+    }
+}
+
+// Modified fetchPendingMessages function
 function fetchPendingMessages() {
     fetch('/get_pending_messages', {
         method: 'GET',
@@ -88,6 +131,8 @@ function fetchPendingMessages() {
             data.messages.forEach(msg => {
                 if (msg.role === 'assistant') {
                     chatBox.innerHTML += `<div class="bot-message">Bot: ${msg.content}</div>`;
+                    playSound(); // Play notification sound
+                    showNotification(msg.content); // Show browser notification
                 }
                 // You can handle other roles if needed
             });
