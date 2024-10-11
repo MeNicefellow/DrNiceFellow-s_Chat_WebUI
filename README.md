@@ -1,8 +1,8 @@
-# DrNiceFellow's Simple Chat WebUI
+# DrNiceFellow's Chat WebUI
 
 ![Screenshot](/assets/screenshot.png)
 
-This is a simple chat WebUI developed by Dr. Nicefellow. It is designed to provide a user-friendly interface for interacting with a chatbot. The backend engine is powered by OpenAI API, and the backend LLM should support chat template. It is tested with OpenAI API extension of text-generation-web-ui.
+This is a chat WebUI developed by Dr. Nicefellow. It is designed to provide a user-friendly interface for interacting with a chatbot. The backend engine is powered by OpenAI API, and the backend LLM should support chat template. It is tested with OpenAI API extension of text-generation-web-ui.
 
 ## Features
 
