@@ -8,7 +8,16 @@ This is a simple chat WebUI developed by Dr. Nicefellow. It is designed to provi
 
 - User-friendly chat interface
 - Backend engine powered by OpenAI API
-- Tool usage support for Python interpreter and search engine and RAG
+- Tool usage support for Python interpreter and search engine
+- RAG (Retrieval-Augmented Generation) support
+- Calendar integration with event management and reminders
+
+## Calendar Features
+
+- Set up events: The assistant can create new calendar events based on user requests.
+- Reminders: The system can remind users of upcoming events.
+- Display upcoming events: The web interface shows events for the next 7 days.
+- Update calendar: The calendar automatically refreshes after each chat interaction.
 
 ## Requirements
 
@@ -35,7 +44,7 @@ This is a simple chat WebUI developed by Dr. Nicefellow. It is designed to provi
    ```
    python app.py
    ```
-   
+
 ## Database Preparation
 
 Before running the application, you need to prepare the PostgreSQL database. Follow these steps:
@@ -71,12 +80,19 @@ After these steps, your PostgreSQL database is ready for the application.
 
 Open your web browser and navigate to `http://localhost:7860`. You can start chatting with the bot by typing your message in the chat input field and pressing the "Send" button.
 
+### Calendar Interaction
+
+You can interact with the calendar feature through natural language commands in the chat. For example:
+
+- "Set up a meeting with John on Friday at 2 PM"
+- "Remind me to call Mom tomorrow at 6 PM"
+- "What events do I have this week?"
+
+The assistant will interpret these commands and update the calendar accordingly. The upcoming events for the next 7 days will be displayed on the web interface, automatically updating after each interaction.
 
 ## Tool Usage
 
 This project supports the use of the Python interpreter and search engine. The Python interpreter is used for executing Python code, while the search engine is used for retrieving web data based on automatically generated search terms.
-
-To update the `README.md` file, you can add a new section that describes the RAG feature and its interaction with the PostgreSQL database. Here's a suggestion:
 
 ## RAG and PostgreSQL Integration
 
@@ -85,16 +101,6 @@ The software now includes a feature for automatic saving of important chat infor
 To use this feature, you need to provide the necessary database configuration in the `config.yml` file. The required parameters include the database name, host, password, port, user, and table name.
 
 Please note that this feature requires additional dependencies. These dependencies are listed in the `requirements_rag.txt` file.
-
-
-For the `requirements_rag.txt` file, you can list the dependencies as follows:
-
-```plaintext
-psycopg2-binary==2.9.1
-llama_index==0.1.0
-```
-
-Please note that the versions of the dependencies are hypothetical and you should use the versions that are compatible with your project.
 
 ## Database Visualization
 
