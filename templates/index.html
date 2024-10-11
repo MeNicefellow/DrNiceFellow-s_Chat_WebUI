@@ -12,16 +12,20 @@
     <div id="chat-container">
         <div id="chat-title">{{ title }}</div> <!-- This is where the title is displayed in the chat UI -->
         <div id="chat-box"></div>
+        <!-- Input area for the chat message -->
         <div id="input-area">
             <input type="text" id="chat-input" placeholder="Ask me anything...">
-            <button id="send-btn" onclick="sendMessage()">Send</button>
-            <button onclick="window.location.href='{{ url_for('download_chat_history') }}'" id="download-btn">Download Chat History</button>
-            <button id="change-background">Change Background</button>
-            <button id="clear-btn">Clear Chat History</button>
+        </div>
+        <!-- Button area for action buttons -->
+        <div id="button-area">
+            <button onclick="window.location.href='{{ url_for('download_chat_history') }}'" class="action-btn">Download Chat History</button>
+            <button class="action-btn" id="change-background">Change Background</button>
+            <button class="action-btn" id="clear-btn">Clear Chat History</button>
             <div class="tool-usage-group">
                 <label for="tool-usage">Allow tool usage</label>
                 <input type="checkbox" id="tool-usage" name="tool-usage" checked>
             </div>
+            <button id="send-btn" onclick="sendMessage()">Send</button>
         </div>
     </div>
 
