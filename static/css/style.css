@@ -94,7 +94,6 @@ label[for="tool-usage"] {
     background: #e1e9f1;
 }
 
-/* Input and Button Area */
 #input-area {
     padding: 15px;
     background: #f8f9fa;
@@ -103,16 +102,18 @@ label[for="tool-usage"] {
     display: flex;
     align-items: center;
     gap: 10px; /* Add space between input and button */
+    box-sizing: border-box; /* Ensure padding and border are included in the width */
 }
 
 #chat-input {
     flex-grow: 1;
     height: 40px;
     padding: 10px;
-    border: 1px solid #bbb;
+    border: 1px solid #bbb; /* Ensure the border is applied to all sides */
     border-radius: 10px;
     font-size: 16px;
     box-sizing: border-box; /* Ensure consistent sizing */
+    margin-right: 0; /* Remove any margin that could cause alignment issues */
 }
 
 #button-area {
