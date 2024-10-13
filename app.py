@@ -130,9 +130,9 @@ def ask():
                 f'Current time: {str(now)}. '
                 f'Please provide the answer to the following question strictly in JSON format, '
                 f'with no additional text or explanation. The JSON response should contain only two keys: '
-                f'"method" and "content". The "method" key can have one of six values: "DirectAnswer", '
-                f'"SearchEngine", "python", "SaveToDB", "RetrieveFromDB", or "AddToCalendar". The "content" key should '
-                f'contain the corresponding output based on the method chosen. For "DirectAnswer", it should '
+                f'"method" and "content". The "method" key can have one of seven values: "DirectAnswer", '
+                f'"SearchEngine", "python", "SaveToDB", "RetrieveFromDB", "AddToCalendar", or "RetrieveFromCalendar". '
+                f'The "content" key should contain the corresponding output based on the method chosen. For "DirectAnswer", it should '
                 f'be the factual answer to the question posed. For "SearchEngine", it should be the exact '
                 f'search query you would use. For "python", it should be the Python code that would generate '
                 f'the answer. For "SaveToDB", use this method in two cases: when the user provides important '
@@ -143,6 +143,8 @@ def ask():
                 f'data from the database. For "AddToCalendar", use this method when the user wants to add an event to the calendar. '
                 f'The "content" should be a JSON object with "event_content" and "event_datetime" keys, '
                 f'where "event_datetime" should be in ISO 8601 format (YYYY-MM-DDTHH:MM:SS). '
+                f'For "RetrieveFromCalendar", the "content" should be a JSON object with "start_datetime" and "end_datetime" keys, '
+                f'both in ISO 8601 format (YYYY-MM-DDTHH:MM:SS). Use this method when the user asks about their schedule or calendar events. '
                 f'Here is the question: {question}'
             )
         else:
@@ -175,7 +177,7 @@ def ask():
                 print("data:", data)
                 if 'method' not in data or 'content' not in data:
                     return jsonify({'error': 'Invalid JSON format. Please provide the answer in the specified format.'}), 400
-                elif data['method'] not in ['DirectAnswer', 'SearchEngine', 'python', 'SaveToDB', 'RetrieveFromDB', 'AddToCalendar']:
+                elif data['method'] not in ['DirectAnswer', 'SearchEngine', 'python', 'SaveToDB', 'RetrieveFromDB', 'AddToCalendar', 'RetrieveFromCalendar']:
                     return jsonify({'error': 'Invalid method. Please choose one of the allowed methods.'}), 400
                 elif data['method'] == 'DirectAnswer':
                     return jsonify({'answer': data['content'] + f' (Tool used: {tool_used} for the answer)'})
@@ -227,6 +229,40 @@ def ask():
                         print(f"Error parsing event data: {e}")
                         traceback.print_exc()
                         prompt = f'There was an error adding the event to the calendar. Please ensure the "content" contains a JSON object with "event_content" and "event_datetime" in ISO 8601 format. Respond in JSON format with a "DirectAnswer" explaining the error.'
+                elif data['method'] == 'RetrieveFromCalendar':
+                    tool_used += 'RetrieveFromCalendar '
+                    content = data['content']
+                    try:
+                        if isinstance(content, str):
+                            date_range = json.loads(content)
+                        else:
+                            date_range = content
+                        start_datetime_str = date_range['start_datetime']
+                        end_datetime_str = date_range['end_datetime']
+                        start_datetime = parse_datetime(start_datetime_str)
+                        end_datetime = parse_datetime(end_datetime_str)
+                        events = db.get_upcoming_events(start_datetime, end_datetime)
+                        print("events:", events)
+                        if events:
+                            event_list = [
+                                f"- {event_content} at {event_datetime}"
+                                for _, event_content, event_datetime in events
+                            ]
+                            output = "\n".join(event_list)
+                        else:
+                            output = "No events found in this time range."
+                        prompt = (
+                            f'The events between {start_datetime_str} and {end_datetime_str} are:\n{output}\n'
+                            f'Please provide a "DirectAnswer" in JSON format summarizing these events for the user.'
+                        )
+                    except Exception as e:
+                        print(f"Error retrieving calendar events: {e}")
+                        prompt = (
+                            f'There was an error retrieving events from the calendar. '
+                            f'Please ensure the "content" contains a JSON object with "start_datetime" and "end_datetime" in ISO 8601 format. '
+                            f'Respond in JSON format with a "DirectAnswer" explaining the error.'
+                        )
+
                 else:
                     print("Invalid method:", data['method'])
                 i += 1
