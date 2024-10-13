@@ -1,23 +1,27 @@
-# DrNiceFellow's Chat WebUI
+# DrNiceFellow's Virtual Assistant System
 
 ![Screenshot](/assets/screenshot.png)
 
-This is a chat WebUI developed by Dr. Nicefellow. It is designed to provide a user-friendly interface for interacting with a chatbot. The backend engine is powered by OpenAI API, and the backend LLM should support chat template. It is tested with OpenAI API extension of text-generation-web-ui.
+This is a virtual assistant platform developed by Dr. Nicefellow. It provides a user-friendly interface for interacting with an AI assistant that can execute various tasks beyond simple chatting. Powered by OpenAI API and designed for seamless tool integration, this system supports functions such as Python code execution, web searches, event management, and Retrieval-Augmented Generation (RAG).
 
 ## Features
 
 - User-friendly chat interface
 - Backend engine powered by OpenAI API
-- Tool usage support for Python interpreter and search engine
-- RAG (Retrieval-Augmented Generation) support
-- Calendar integration with event management and reminders
+- Multi-tool support, including:
+  - Python interpreter for code execution
+  - Search engine for real-time data retrieval
+  - Calendar management for events and reminders
+- RAG (Retrieval-Augmented Generation) for context-aware and persistent conversations
+- PostgreSQL integration for saving important chat data and enabling future retrieval
+- Automatic calendar updates and reminders
 
 ## Calendar Features
 
-- Set up events: The assistant can create new calendar events based on user requests.
-- Reminders: The system can remind users of upcoming events.
-- Display upcoming events: The web interface shows events for the next 7 days.
-- Update calendar: The calendar automatically refreshes after each chat interaction.
+- Create events: The assistant can create new calendar events based on user requests.
+- Event reminders: It can remind users of upcoming events.
+- View upcoming events: Displays events for the next 7 days.
+- Auto-refresh: The calendar updates automatically after each chat interaction.
 
 ## Requirements
 
@@ -30,24 +34,23 @@ This is a chat WebUI developed by Dr. Nicefellow. It is designed to provide a us
 
 1. Clone the repository
 2. Start the backend server and obtain the API key and host address.
-3. Install the required packages using pip. 
+3. Install the required packages:
    ```
    pip install -r requirements.txt
    ```
-4. Optional: Install the required packages for RAG support using pip.
+4. Optional: Install additional dependencies for RAG support:
    ```
    pip install -r requirements_rag.txt
    ```
-5. Create a `config.yml` file with the example example.config.yml and set the OpenAI API key.
-6. Set your OpenAI API key in the `config.yml` file
-7. Run the application:
+5. Create a `config.yml` file from the provided `example.config.yml` and set the OpenAI API key.
+6. Run the application:
    ```
    python app.py
    ```
 
-## Database Preparation
+## Database Setup
 
-Before running the application, you need to prepare the PostgreSQL database. Follow these steps:
+Before using the platform, prepare the PostgreSQL database:
 
 1. Start the PostgreSQL service:
    ```
@@ -57,78 +60,70 @@ Before running the application, you need to prepare the PostgreSQL database. Fol
    ```
    su - postgres
    ```
-3. Enter the PostgreSQL command line:
+3. Access PostgreSQL:
    ```
    psql
    ```
-4. Create a new user named `chatbot` with the password `password`:
-   ```
+4. Create a new user and database:
+   ```sql
    CREATE USER chatbot WITH PASSWORD 'password';
-   ```
-5. Grant superuser privileges to the `chatbot` user:
-   ```
    ALTER ROLE chatbot SUPERUSER;
-   ```
-6. Create a new database named `chatbot`:
-   ```
    CREATE DATABASE chatbot;
    ```
 
-After these steps, your PostgreSQL database is ready for the application.
-
 ## Usage
 
-Open your web browser and navigate to `http://localhost:7860`. You can start chatting with the bot by typing your message in the chat input field and pressing the "Send" button.
+Once the server is running, open a web browser and navigate to `http://localhost:7860`. You can start interacting with the virtual assistant by typing commands or questions into the chat.
 
 ### Calendar Interaction
 
-You can interact with the calendar feature through natural language commands in the chat. For example:
+Users can interact with the assistant's calendar features through natural language commands, such as:
 
-- "Set up a meeting with John on Friday at 2 PM"
-- "Remind me to call Mom tomorrow at 6 PM"
+- "Set up a meeting with John on Friday at 2 PM."
+- "Remind me to call Mom tomorrow at 6 PM."
 - "What events do I have this week?"
 
-The assistant will interpret these commands and update the calendar accordingly. The upcoming events for the next 7 days will be displayed on the web interface, automatically updating after each interaction.
+The assistant will update the calendar and display the upcoming events for the next 7 days.
 
-## Tool Usage
+## Tool Integration
 
-This project supports the use of the Python interpreter and search engine. The Python interpreter is used for executing Python code, while the search engine is used for retrieving web data based on automatically generated search terms.
+This platform offers:
+
+- **Python Interpreter**: The assistant can execute Python code and return the results.
+- **Search Engine**: Automatically retrieves relevant information from the web based on user queries.
 
 ## RAG and PostgreSQL Integration
 
-The software now includes a feature for automatic saving of important chat information to a PostgreSQL database using the RAG (Retrieval-Augmented Generation) model. This information can be automatically fetched for future chats, enhancing the chatbot's ability to provide context-aware responses abd achieving a persistent chatbot.
+The virtual assistant leverages RAG (Retrieval-Augmented Generation) to improve context-aware responses by storing key information in a PostgreSQL database. This allows the assistant to recall prior chats and provide more relevant, persistent interactions.
 
-To use this feature, you need to provide the necessary database configuration in the `config.yml` file. The required parameters include the database name, host, password, port, user, and table name.
-
-Please note that this feature requires additional dependencies. These dependencies are listed in the `requirements_rag.txt` file.
+To enable this, configure your PostgreSQL database settings in the `config.yml` file. Ensure you provide details such as database name, user, password, host, and port.
 
 ## Database Visualization
 
-To visualize the database, I recommend using a tool like [pgweb](https://github.com/sosedoff/pgweb). Below is a command to use it:
-    
-    ```bash
-    ./pgweb_linux_amd64  --bind=0.0.0.0 --listen=7861 --url="postgresql://chatbot:password@localhost:5432/chatbot"
-    
-    ```
+To visualize the database, consider using a tool like [pgweb](https://github.com/sosedoff/pgweb):
 
-## TODO
+```bash
+./pgweb_linux_amd64  --bind=0.0.0.0 --listen=7861 --url="postgresql://chatbot:password@localhost:5432/chatbot"
+```
 
-- [x] Add support for other chat formats
-- [x] Add function calling
-- [x] Add RAG support
+## Future Plans
+
+- [x] Add support for multiple chat formats
+- [x] Add function calling capabilities
+- [x] Implement full RAG support
 
 ## Disclaimer
 
-This project is intended for personal use. Given that this chatbot has the ability to write Python code, it's important to be aware of potential security risks. Users should be cautious when interacting with the bot, especially when executing generated code. The bot's code generation capability could potentially be exploited by malicious users to execute harmful commands or scripts. Users should use this project at their own risk. The developers of this project will not be responsible for any damage or issues that may arise from using this project.
+This project is intended for personal use. Because the assistant can execute Python code, be aware of the potential security risks involved. Users should exercise caution when interacting with the assistant, particularly when running code. The developers take no responsibility for any damages or security breaches arising from the use of this software.
 
 ## License
 
-This project is licensed under the terms of the Apache 2.0 License.
+This project is licensed under the Apache 2.0 License.
 
-## Discord Server
+## Discord Community
 
-Join our Discord server [here](https://discord.gg/xhcBDEM3).
+Join our Discord server [here](https://discord.gg/xhcBDEM3) to ask questions, share feedback, and contribute to the project.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Feel free to submit a Pull Request.
