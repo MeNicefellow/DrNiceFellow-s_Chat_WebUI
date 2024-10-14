@@ -111,6 +111,7 @@ To visualize the database, consider using a tool like [pgweb](https://github.com
 - [x] Add support for multiple chat formats
 - [x] Add function calling capabilities
 - [x] Implement full RAG support
+- [] Intelligent scheduling calendar event scanning
 
 ## Disclaimer
 
