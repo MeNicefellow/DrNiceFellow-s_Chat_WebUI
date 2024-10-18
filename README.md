@@ -112,6 +112,7 @@ To visualize the database, consider using a tool like [pgweb](https://github.com
 - [x] Add function calling capabilities
 - [x] Implement full RAG support
 - [] Intelligent scheduling calendar event scanning
+- [] Automatic editing routines
 
 ## Disclaimer
 
