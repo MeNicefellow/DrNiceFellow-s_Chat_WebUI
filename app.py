@@ -13,6 +13,8 @@ import traceback
 app = Flask(__name__)
 import yaml
 import os
+from utils import ollama_chatter as oc
+from utils import llm_chatter
 
 # Load keys from config.yml
 with open("config.yml", 'r') as ymlfile:
@@ -43,6 +45,8 @@ from flask import make_response
 pending_messages = []  # Global list to store pending assistant messages
 session = {}
 pending_reminders = []  # Global list to store pending reminders
+
+ollama_chatter = oc()#llm_chatter()#oc()
 
 
 @app.route('/get_calendar_events', methods=['GET'])
@@ -92,7 +96,7 @@ def background_image():
 
 @app.route('/download_chat_history', methods=['GET'])
 def download_chat_history():
-    chat_history = session.get('chat_history', '').replace('</s>', 'User: ').replace('</s>', '\nBot: ')
+    chat_history = session.get('chat_history', '').replace('', 'User: ').replace('', '\nBot: ')
     response = make_response(chat_history)
     response.headers["Content-Disposition"] = "attachment; filename=chat_history.txt"
     return response
@@ -151,24 +155,17 @@ def ask():
             first_prompt = f'Please provide the answer to the following question strictly in JSON format, with no additional text or explanation. The JSON response should contain only two keys: "method" and "content". The "method" key can have one of four values: "DirectAnswer", "SearchEngine", "python", or "AddToCalendar". The "content" key should contain the corresponding output based on the method chosen. For "DirectAnswer", it should be the factual answer to the question posed. For "SearchEngine", it should be the exact search query you would use. For "python", it should be the Python code that would generate the answer. For "AddToCalendar", use this method when the user wants to add an event to the calendar. The "content" should be a JSON object with "event_content" and "event_datetime" keys, where "event_datetime" should be in ISO 8601 format (YYYY-MM-DDTHH:MM:SS). Here is the question: {question}'
 
         session['msg_history'].append({"role": "user", "content": first_prompt})
-
-        headers = {
-            "Content-Type": "application/json"
-        }
-        data = {
-            "mode": "instruct",
-            "messages": session['msg_history'],
-            "temperature": 0.1,
-        }
-        response = requests.post(host, headers=headers, json=data, verify=False)
-        print("request sent:", data)
+        
+        # Replace direct request with ollama_chatter
+        response = ollama_chatter.communicate(first_prompt, greedy=True, reset=False)
+        
         i = 0
         tool_used = ''
         while i < 5:
             print("=====================================")
-            if response.status_code == 200:
-                print("response with 200")
-                answer = response.json()['choices'][0]['message']['content']
+            if response:  # Changed from response.status_code check
+                print("response received")
+                answer = response#response['content']  # Updated to match ollama_chatter response format
                 print("answer:", answer)
                 session['msg_history'].append({"role": "assistant", "content": answer})
                 print("chat_history:", session['chat_history'])
@@ -268,40 +265,29 @@ def ask():
                 i += 1
                 print(f"Round {i} prompt: {prompt}")
                 session['msg_history'].append({"role": "user", "content": prompt})
-                data = {
-                    "mode": "instruct",
-                    "messages": session['msg_history'],
-                    "temperature": 0.1
-                }
-                response = requests.post(host, headers=headers, json=data, verify=False)
+                # Replace request with ollama_chatter at the end of loop
+                response = ollama_chatter.communicate(prompt, greedy=True, reset=False)
                 print('------')
                 print("response:", response)
                 print('------')
             else:
                 print("response with error")
-                return jsonify({'error': 'Failed to fetch response from OpenAI'}), 500
+                return jsonify({'error': 'Failed to fetch response from LLM'}), 500
     else:
         session['msg_history'].append({"role": "user", "content": question})
+        
+        # Replace direct request with ollama_chatter
+        response = ollama_chatter.communicate(question, greedy=True, reset=False)
 
-        headers = {
-            "Content-Type": "application/json"
-        }
-        data = {
-            "mode": "instruct",
-            "messages": session['msg_history']
-        }
-        response = requests.post(host, headers=headers, json=data, verify=False)
-        print("request sent:", data)
-
-        if response.status_code == 200:
-            print("response with 200")
-            answer = response.json()['choices'][0]['message']['content']
+        if response:  # Changed from response.status_code check
+            print("response received")
+            answer = response#['content']  # Updated to match ollama_chatter response format
             session['msg_history'].append({"role": "assistant", "content": answer})
             print("chat_history:", session['chat_history'])
             return jsonify({'answer': answer})
         else:
             print("response with error")
-            return jsonify({'error': 'Failed to fetch response from OpenAI'}), 500
+            return jsonify({'error': 'Failed to fetch response from LLM'}), 500
 
 @app.route('/get_pending_messages', methods=['GET'])
 def get_pending_messages():
@@ -318,6 +304,7 @@ def get_pending_messages():
 def background_calendar_checker():
     global pending_reminders
     reminded_events = set()
+    chatter = oc()
     while True:
         try:
             # Get the current time and time 15 minutes from now
@@ -333,19 +320,14 @@ def background_calendar_checker():
                     # Prompt the LLM to generate the reminder message
                     llm_prompt = f'You have an upcoming event: "{event_content}" at {event_datetime}. The current time is {now}. You usually remind the user 15 minutes in advance. Please generate a reminder message to send to the user. Respond in strict JSON format with one key: "content". And the content is the reminder message you want to send to the user.'
                     # Send this prompt to the LLM
-                    headers = {
-                        "Content-Type": "application/json"
-                    }
-                    data = {
-                        "mode": "instruct",
-                        "messages": [
-                            {"role": "system", "content": system_prompt['content']},
-                            {"role": "user", "content": llm_prompt}
-                        ]
-                    }
-                    response = requests.post(host, headers=headers, json=data, verify=False)
-                    if response.status_code == 200:
-                        llm_response = response.json()['choices'][0]['message']['content']
+                    messages = [
+                        {"role": "system", "content": system_prompt['content']},
+                        {"role": "user", "content": llm_prompt}
+                    ]
+                    response = chatter.communicate(llm_prompt, greedy=True, reset=True)
+                    
+                    if response:
+                        llm_response = response#['content']  # Updated to match ollama_chatter response format
                         llm_response = json.loads(llm_response)
                         llm_response = llm_response['content']
                         # Add the reminder message to the pending messages
